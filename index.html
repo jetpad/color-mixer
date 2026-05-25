@@ -1534,7 +1534,7 @@ function _drawShareImage() {
   const mix = window.lastMixResult;
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
 
-  const W=680, H=200, SC=2;
+  const W=680, H=200, SC=1;
   const canvas = document.createElement('canvas');
   canvas.width = W*SC; canvas.height = H*SC;
   const ctx = canvas.getContext('2d');
@@ -1596,8 +1596,6 @@ function _drawShareImage() {
     if(name!==s.name) name=name.slice(0,-1)+'…';
     ctx.fillText(name, x+7, iy+28);
 
-    ctx.font=`bold 14px ${F}`; ctx.fillStyle=acc;
-    ctx.fillText(s.weightPct+'%', x+7, iy+44);
   });
 
   // Arrow
@@ -1624,9 +1622,6 @@ function _drawShareImage() {
 
   ctx.font=`10px ${F}`; ctx.fillStyle=mut;
   ctx.fillText(mix.mixedHex, resX+7, ry+28);
-
-  ctx.font=`bold 11px ${F}`; ctx.fillStyle=acc;
-  ctx.fillText(mix.matchPct+'% match', resX+7, ry+42);
 
   // Export: copy to clipboard → fallback to download
   canvas.toBlob(blob => {
