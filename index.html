@@ -1596,6 +1596,14 @@ function _drawShareImage() {
     if(name!==s.name) name=name.slice(0,-1)+'…';
     ctx.fillText(name, x+7, iy+28);
 
+    if(s.brand) {
+      ctx.font=`9px ${F}`; ctx.fillStyle=mut;
+      let brand=s.brand;
+      while(ctx.measureText(brand).width > slotW-12 && brand.length>1) brand=brand.slice(0,-1);
+      if(brand!==s.brand) brand=brand.slice(0,-1)+'…';
+      ctx.fillText(brand, x+7, iy+41);
+    }
+
   });
 
   // Arrow
@@ -1684,7 +1692,6 @@ function render(data, targetHex) {
       </div>
       <div class="fil-rt">
         <div class="fil-pc" style="color:${colFor(f.weightPct)}">${f.weightPct}%</div>
-        <div class="fil-mm">${t('layer_mm',f.layerMm)}</div>
       </div>
     </div>`
   ).join('');
