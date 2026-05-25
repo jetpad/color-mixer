@@ -7,24 +7,38 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
 <style>
 :root {
+  /* Light mode (default) */
+  --bg: #f5f5f7;
+  --surface: #ffffff;
+  --panel: #ffffff;
+  --border: #d1d1d6;
+  --border-hover: #a1a1aa;
+  --accent: #1fbf5e;
+  --accent-dark: #17a34f;
+  --text: #18181b;
+  --muted: #6b6b70;
+  --good: #1fbf5e;
+  --mid: #d97706;
+  --bad: #dc2626;
+  --radius: 8px;
+  --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --mono: 'Inter', monospace;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+}
+[data-theme="dark"] {
   --bg: #111111;
   --surface: #1a1a1a;
   --panel: #222222;
   --border: #2e2e2e;
   --border-hover: #4a4a4a;
-  --accent: #1fbf5e;
-  --accent-dark: #17a34f;
   --text: #f0f0f0;
   --muted: #888888;
-  --good: #1fbf5e;
   --mid: #f59e0b;
   --bad: #ef4444;
-  --radius: 8px;
-  --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --mono: 'Inter', monospace;
+  --shadow: 0 1px 3px rgba(0,0,0,0.4);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; font-size: 14px; line-height: 1.5; }
+body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; font-size: 14px; line-height: 1.5; transition: background-color 0.2s, color 0.2s; }
 
 /* ── Lang bar ── */
 .lang-bar {
@@ -250,8 +264,8 @@ input[type=color].tpick:hover { border-color: var(--accent); }
 @keyframes fadeUp { from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)} }
 .ani { animation: fadeUp 0.35s ease forwards; }
 
-/* ── Help trigger ── */
-.help-trigger {
+/* ── Help trigger + Theme toggle ── */
+.help-trigger, .theme-toggle {
   background: var(--surface); border: 1px solid var(--border);
   color: var(--muted); cursor: pointer;
   width: 30px; height: 30px; border-radius: 50%;
@@ -260,7 +274,7 @@ input[type=color].tpick:hover { border-color: var(--accent); }
   padding: 0; margin-right: 4px;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
-.help-trigger:hover { background: var(--accent); color: #000; border-color: var(--accent); }
+.help-trigger:hover, .theme-toggle:hover { background: var(--accent); color: #000; border-color: var(--accent); }
 
 /* ── Help modal ── */
 .help-overlay {
@@ -317,6 +331,17 @@ input[type=color].tpick:hover { border-color: var(--accent); }
 @keyframes fadeIn { from{opacity:0} to{opacity:1} }
 @keyframes helpIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
 
+/* Share button */
+.share-row { display: flex; justify-content: flex-end; margin: -10px 0 20px; }
+.btn-share {
+  background: var(--panel); border: 1px solid var(--border);
+  color: var(--muted); font-family: var(--sans); font-size: 0.72rem; font-weight: 600;
+  padding: 7px 14px; cursor: pointer; border-radius: var(--radius);
+  transition: all 0.15s; display: flex; align-items: center; gap: 6px;
+}
+.btn-share:hover { border-color: var(--accent); color: var(--accent); }
+.btn-share svg { flex-shrink: 0; }
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -335,6 +360,7 @@ input[type=color].tpick:hover { border-color: var(--accent); }
 
 <!-- Language switcher -->
 <div class="lang-bar">
+  <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle dark/light mode">☀</button>
   <button class="help-trigger" id="helpTrigger" onclick="openHelp()" title="Help">?</button>
   <button class="lang-btn active" onclick="setLang('de')" title="Deutsch">🇩🇪</button>
   <button class="lang-btn" onclick="setLang('en')" title="English">🇬🇧</button>
@@ -441,6 +467,13 @@ input[type=color].tpick:hover { border-color: var(--accent); }
       <div class="compare">
         <div class="compare-half" id="cTarget"><div class="compare-lbl" data-t="lbl_target">Zielfarbe</div><div class="compare-hex" id="cTargetHex"></div></div>
         <div class="compare-half" id="cMixed"><div class="compare-lbl" data-t="lbl_result">Ergebnis</div><div class="compare-name" id="cColorName"></div><div class="compare-hex" id="cMixedHex"></div></div>
+      </div>
+
+      <div class="share-row">
+        <button class="btn-share" onclick="generateShareImage()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          Share Recipe
+        </button>
       </div>
 
       <div class="res-label" data-t="lbl_match">Übereinstimmung</div>
@@ -1481,12 +1514,144 @@ function findBestMix(targetHex) {
   return {best, targetHex};
 }
 
+// ── SHARE IMAGE ───────────────────────────────────────────────────
+function rrPath(ctx, x, y, w, h, r) {
+  const [tl,tr,br,bl] = typeof r === 'number' ? [r,r,r,r] : r;
+  ctx.beginPath();
+  ctx.moveTo(x+tl, y); ctx.lineTo(x+w-tr, y); ctx.arcTo(x+w,y, x+w,y+tr, tr);
+  ctx.lineTo(x+w, y+h-br); ctx.arcTo(x+w,y+h, x+w-br,y+h, br);
+  ctx.lineTo(x+bl, y+h); ctx.arcTo(x,y+h, x,y+h-bl, bl);
+  ctx.lineTo(x, y+tl); ctx.arcTo(x,y, x+tl,y, tl);
+  ctx.closePath();
+}
+
+function generateShareImage() {
+  if (!window.lastMixResult) { showToast('Calculate a mix first.'); return; }
+  document.fonts.ready.then(_drawShareImage);
+}
+
+function _drawShareImage() {
+  const mix = window.lastMixResult;
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
+  const W=680, H=200, SC=2;
+  const canvas = document.createElement('canvas');
+  canvas.width = W*SC; canvas.height = H*SC;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(SC, SC);
+
+  const bg     = isDark ? '#181818' : '#f5f5f7';
+  const cardBg = isDark ? '#242424' : '#ffffff';
+  const bdr    = isDark ? '#3a3a3a' : '#d1d1d6';
+  const txt    = isDark ? '#f0f0f0' : '#18181b';
+  const mut    = isDark ? '#888888' : '#6b6b70';
+  const acc    = '#1fbf5e';
+  const F      = "'Inter', system-ui, sans-serif";
+
+  // Background
+  ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
+
+  // Header bar
+  ctx.fillStyle = acc; ctx.fillRect(0,0,W,38);
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#fff'; ctx.font = `bold 13px ${F}`;
+  ctx.fillText('AMS Color Mix Recipe', 14, 19);
+  ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.font = `11px ${F}`;
+  const attr = 'makerworld.com/en/models/460079';
+  ctx.fillText(attr, W - ctx.measureText(attr).width - 14, 19);
+
+  // Layout constants
+  const PAD=12, GAP=6, slotW=108;
+  const cardTop=46, cardH=H-cardTop-PAD;
+  const arrowSec=40;
+  const after4 = PAD + 4*slotW + 3*GAP;
+  const resX = after4 + arrowSec;
+  const resW = W - resX - PAD;
+
+  ctx.textBaseline = 'alphabetic';
+
+  // 4 slot cards
+  mix.slotInfo.forEach((s, i) => {
+    const x = PAD + i*(slotW+GAP);
+    const swH = Math.round(cardH * 0.56);
+
+    rrPath(ctx,x,cardTop,slotW,cardH,6);
+    ctx.fillStyle=cardBg; ctx.fill();
+    ctx.strokeStyle=bdr; ctx.lineWidth=0.75; ctx.stroke();
+
+    rrPath(ctx,x,cardTop,slotW,swH,[6,6,0,0]);
+    ctx.fillStyle=s.hex; ctx.fill();
+    // Outline white swatches so they're visible
+    if (/^#f{6}$/i.test(s.hex) || s.hex.toLowerCase()==='#ffffff') {
+      ctx.strokeStyle=bdr; ctx.lineWidth=0.5; ctx.stroke();
+    }
+
+    const iy = cardTop+swH;
+    ctx.fillStyle=mut; ctx.font=`600 9px ${F}`;
+    ctx.fillText(`SLOT ${s.slot}  ·  ${s.hex}`, x+7, iy+14);
+
+    ctx.font=`bold 11px ${F}`; ctx.fillStyle=txt;
+    let name=s.name;
+    while(ctx.measureText(name).width > slotW-12 && name.length>1) name=name.slice(0,-1);
+    if(name!==s.name) name=name.slice(0,-1)+'…';
+    ctx.fillText(name, x+7, iy+28);
+
+    ctx.font=`bold 14px ${F}`; ctx.fillStyle=acc;
+    ctx.fillText(s.weightPct+'%', x+7, iy+44);
+  });
+
+  // Arrow
+  ctx.fillStyle=mut; ctx.font=`20px ${F}`; ctx.textBaseline='middle';
+  ctx.fillText('→', after4+10, cardTop+cardH/2);
+  ctx.textBaseline='alphabetic';
+
+  // Result card
+  const resSwH = Math.round(cardH*0.58);
+  rrPath(ctx,resX,cardTop,resW,cardH,6);
+  ctx.fillStyle=cardBg; ctx.fill();
+  ctx.strokeStyle=acc; ctx.lineWidth=1.5; ctx.stroke();
+
+  rrPath(ctx,resX,cardTop,resW,resSwH,[6,6,0,0]);
+  ctx.fillStyle=mix.mixedHex; ctx.fill();
+
+  const ry = cardTop+resSwH;
+  const colorName = getColorName(mix.mixedHex);
+  ctx.font=`bold 12px ${F}`; ctx.fillStyle=txt;
+  let cn=colorName;
+  while(ctx.measureText(cn).width > resW-14 && cn.length>1) cn=cn.slice(0,-1);
+  if(cn!==colorName) cn=cn.slice(0,-1)+'…';
+  ctx.fillText(cn, resX+7, ry+15);
+
+  ctx.font=`10px ${F}`; ctx.fillStyle=mut;
+  ctx.fillText(mix.mixedHex, resX+7, ry+28);
+
+  ctx.font=`bold 11px ${F}`; ctx.fillStyle=acc;
+  ctx.fillText(mix.matchPct+'% match', resX+7, ry+42);
+
+  // Export: copy to clipboard → fallback to download
+  canvas.toBlob(blob => {
+    const download = () => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href=url; a.download='color-mix-recipe.png'; a.click();
+      URL.revokeObjectURL(url);
+      showToast('Image downloaded ✓');
+    };
+    if (navigator.clipboard && window.ClipboardItem) {
+      navigator.clipboard.write([new ClipboardItem({'image/png': blob})])
+        .then(() => showToast('Recipe image copied ✓'))
+        .catch(download);
+    } else { download(); }
+  }, 'image/png');
+}
+
 // ── RENDER ────────────────────────────────────────────────────────
 function colFor(p){return p>=90?'#389e0d':p>=70?'#d48806':'#cf1322';}
 function setStatus(m,c=''){const el=document.getElementById('status');el.textContent=m;el.className=c;}
 
 function render(data, targetHex) {
   const mix=data.best, pct=mix.matchPct, col=colFor(pct);
+  window.lastMixResult = mix; // used by generateShareImage()
   document.getElementById('cTarget').style.background=targetHex;
   document.getElementById('cTargetHex').textContent=targetHex.toUpperCase();
   document.getElementById('cMixed').style.background=mix.mixedHex;
@@ -1558,7 +1723,35 @@ document.addEventListener('keydown', e => {
   }
 });
 
+// ── THEME ─────────────────────────────────────────────────────────
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const btn = document.getElementById('themeToggle');
+  if (btn) btn.textContent = theme === 'dark' ? '☀' : '☾';
+  btn && (btn.title = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'light';
+  const next = current === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('fcm_theme', next);
+  applyTheme(next);
+}
+
+function initTheme() {
+  const stored = localStorage.getItem('fcm_theme');
+  if (stored) { applyTheme(stored); return; }
+  // Auto-detect system preference; default to light if no preference set
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  applyTheme(prefersDark ? 'dark' : 'light');
+  // Follow system changes unless the user has made a manual choice
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+    if (!localStorage.getItem('fcm_theme')) applyTheme(e.matches ? 'dark' : 'light');
+  });
+}
+
 // ── INIT ──────────────────────────────────────────────────────────
+initTheme();
 loadFilaments();
 setLang(currentLang);
 applyHelpTranslations();
