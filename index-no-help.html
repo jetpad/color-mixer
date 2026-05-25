@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Filament Color Mixer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Cabinet+Grotesk:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f0e8; --surface: #ede8df; --panel: #ffffff;
+  --border: #d4cdc0; --accent: #d4380d;
+  --text: #1a1612; --muted: #8c8278;
+  --good: #389e0d; --mid: #d48806; --bad: #cf1322;
+  --mono: 'DM Mono', monospace; --sans: 'Cabinet Grotesk', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--mono); min-height: 100vh; }
+
+/* ── Lang bar ── */
+.lang-bar {
+  position: fixed; top: 16px; right: 16px; z-index: 1000;
+  display: flex; gap: 4px; background: #fff; padding: 6px 8px;
+  border-radius: 6px; box-shadow: 0 2px 16px rgba(0,0,0,0.15);
+  border: 1px solid var(--border);
+}
+.lang-btn {
+  background: none; border: none; cursor: pointer; font-size: 1.55rem;
+  padding: 2px 5px; border-radius: 4px; opacity: 0.3;
+  transition: opacity 0.15s, transform 0.1s; line-height: 1;
+}
+.lang-btn:hover { opacity: 0.75; transform: scale(1.1); }
+.lang-btn.active { opacity: 1; background: var(--surface); box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); }
+
+/* ── Layout ── */
+.app { display: grid; grid-template-columns: 320px 1fr; min-height: 100vh; }
+
+/* ── Sidebar ── */
+.sidebar {
+  background: var(--text); color: var(--bg);
+  padding: 32px 20px; display: flex; flex-direction: column;
+  gap: 22px; position: sticky; top: 0; height: 100vh; overflow-y: auto;
+}
+.brand { padding-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.brand-title { font-family: var(--sans); font-weight: 900; font-size: 1.25rem; letter-spacing: -0.03em; line-height: 1.1; }
+.brand-title span { color: var(--accent); }
+.brand-sub { font-size: 0.58rem; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(255,255,255,0.3); margin-top: 6px; }
+
+.sec-label {
+  font-size: 0.56rem; letter-spacing: 0.2em; text-transform: uppercase;
+  color: rgba(255,255,255,0.35); margin-bottom: 8px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.count-badge { background: var(--accent); color: #fff; font-size: 0.55rem; padding: 1px 7px; border-radius: 10px; }
+
+.inp {
+  background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12);
+  color: #f5f0e8; font-family: var(--mono); font-size: 0.78rem;
+  padding: 8px 10px; width: 100%; outline: none; transition: border-color 0.15s;
+}
+.inp:focus { border-color: rgba(255,255,255,0.4); }
+.inp::placeholder { color: rgba(255,255,255,0.2); }
+
+.form-grid { display: flex; flex-direction: column; gap: 6px; }
+.form-row { display: flex; gap: 6px; }
+
+input[type=color].cpick {
+  width: 38px; height: 36px; border: 1px solid rgba(255,255,255,0.12);
+  background: none; cursor: pointer; padding: 2px; flex-shrink: 0;
+}
+
+.btn-add {
+  background: var(--accent); color: #fff; border: none;
+  font-family: var(--sans); font-weight: 700; font-size: 0.72rem;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 9px; width: 100%; cursor: pointer; transition: opacity 0.15s; margin-top: 2px;
+}
+.btn-add:hover { opacity: 0.85; }
+
+/* Import / Export */
+.ie-row { display: flex; gap: 6px; }
+.btn-ie {
+  flex: 1; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14);
+  color: rgba(255,255,255,0.7); font-family: var(--sans); font-weight: 700;
+  font-size: 0.65rem; letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 8px 6px; cursor: pointer; transition: all 0.15s; text-align: center;
+}
+.btn-ie:hover { background: rgba(255,255,255,0.15); color: #fff; }
+.btn-ie.import { border-color: rgba(255,200,0,0.3); }
+.btn-ie.export { border-color: rgba(100,255,150,0.3); }
+.btn-ie.preset { border-color: rgba(80,180,255,0.35); }
+
+/* Filter chips */
+.filter-row { display: flex; gap: 4px; margin-bottom: 6px; flex-wrap: wrap; }
+.chip {
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.55); font-family: var(--sans); font-weight: 700;
+  font-size: 0.58rem; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 4px 8px; cursor: pointer; transition: all 0.15s;
+}
+.chip:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* Filament list */
+.fil-items { display: flex; flex-direction: column; gap: 3px; max-height: 260px; overflow-y: auto; }
+.fil-item {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+  padding: 7px 10px;
+}
+.fil-dot { width: 20px; height: 20px; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.15); }
+.fil-info { flex: 1; min-width: 0; }
+.fil-name { font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fil-brand { font-size: 0.58rem; color: rgba(255,255,255,0.3); }
+.fil-del { background: none; border: none; color: rgba(255,255,255,0.2); cursor: pointer; font-size: 1rem; padding: 0 2px; transition: color 0.15s; }
+.fil-del:hover { color: var(--accent); }
+.no-fils { font-size: 0.68rem; color: rgba(255,255,255,0.2); text-align: center; padding: 16px 0; }
+
+/* ── Main ── */
+.main { padding: 48px 36px 80px; }
+.page-title { font-family: var(--sans); font-weight: 900; font-size: clamp(1.8rem,3vw,2.5rem); letter-spacing: -0.04em; line-height: 1; margin-bottom: 6px; }
+.page-title span { color: var(--accent); }
+.page-desc { font-size: 0.7rem; color: var(--muted); letter-spacing: 0.04em; margin-bottom: 32px; }
+
+.target-box {
+  background: var(--panel); border: 1px solid var(--border);
+  padding: 20px; margin-bottom: 24px; position: relative;
+}
+.target-box::before {
+  content: attr(data-label); position: absolute; top: -10px; left: 16px;
+  background: var(--panel); padding: 0 8px;
+  font-size: 0.56rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent);
+}
+.target-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+input[type=color].tpick {
+  width: 54px; height: 54px; border: 2px solid var(--border);
+  background: none; cursor: pointer; padding: 3px; flex-shrink: 0;
+}
+input[type=color].tpick:hover { border-color: var(--accent); }
+.target-hex {
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); font-family: var(--mono); font-size: 1rem;
+  padding: 12px 14px; width: 130px; outline: none; transition: border-color 0.15s; letter-spacing: 0.05em;
+}
+.target-hex:focus { border-color: var(--accent); }
+.btn-calc {
+  background: var(--text); color: var(--bg); border: none;
+  font-family: var(--sans); font-weight: 700; font-size: 0.8rem;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 13px 24px; cursor: pointer; transition: background 0.15s; white-space: nowrap;
+}
+.btn-calc:hover { background: var(--accent); }
+.btn-calc:disabled { opacity: 0.4; cursor: not-allowed; }
+
+#status { font-size: 0.66rem; color: var(--muted); margin-top: 10px; min-height: 18px; letter-spacing: 0.04em; }
+#status.err { color: var(--bad); }
+#status.loading { color: var(--accent); }
+
+#result { display: none; }
+
+.res-label {
+  font-size: 0.56rem; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 12px; display: flex; align-items: center; gap: 10px;
+}
+.res-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.compare { display: flex; height: 80px; border: 1px solid var(--border); margin-bottom: 22px; overflow: hidden; }
+.compare-half { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+.compare-lbl { font-size: 0.52rem; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(255,255,255,0.6); }
+.compare-hex { font-family: var(--mono); font-size: 0.75rem; color: rgba(255,255,255,0.9); }
+
+.score-row {
+  display: flex; align-items: center; gap: 20px; margin-bottom: 22px;
+  background: var(--panel); border: 1px solid var(--border); padding: 18px 22px;
+}
+.score-num { font-family: var(--sans); font-weight: 900; font-size: 3rem; line-height: 1; flex-shrink: 0; }
+.score-right { flex: 1; }
+.score-lbl { font-size: 0.56rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.bar-bg { background: var(--surface); height: 5px; width: 100%; }
+.bar-fg { height: 100%; transition: width 0.7s cubic-bezier(.16,1,.3,1); }
+.score-meta { font-size: 0.62rem; color: var(--muted); margin-top: 6px; }
+
+.layer-box { background: var(--panel); border: 1px solid var(--border); padding: 16px; margin-bottom: 22px; }
+.layer-track { display: flex; height: 44px; gap: 2px; margin-bottom: 10px; border: 1px solid var(--border); overflow: hidden; }
+.layer-block { flex: 1; display: flex; align-items: center; justify-content: center; }
+.layer-n { font-size: 0.46rem; color: rgba(255,255,255,0.5); }
+.layer-legend { display: flex; gap: 14px; flex-wrap: wrap; }
+.leg-item { display: flex; align-items: center; gap: 5px; font-size: 0.62rem; color: var(--muted); }
+.leg-dot { width: 10px; height: 10px; flex-shrink: 0; }
+
+.slots-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 22px; }
+.slot-card { background: var(--panel); border: 1px solid var(--border); overflow: hidden; }
+.slot-card.s1 { border-top: 3px solid #d4380d; }
+.slot-card.s2 { border-top: 3px solid #597ef7; }
+.slot-card.s3 { border-top: 3px solid #389e0d; }
+.slot-card.s4 { border-top: 3px solid #d48806; }
+.slot-head { padding: 8px 10px 4px; display: flex; align-items: center; gap: 6px; }
+.slot-num { font-family: var(--sans); font-weight: 900; font-size: 0.7rem; letter-spacing: 0.08em; }
+.sc1{color:#d4380d}.sc2{color:#597ef7}.sc3{color:#389e0d}.sc4{color:#d48806}
+.slot-layers { font-size: 0.54rem; color: var(--muted); }
+.slot-swatch { height: 56px; }
+.slot-body { padding: 8px 10px 12px; }
+.slot-name { font-family: var(--sans); font-weight: 700; font-size: 0.8rem; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slot-meta { font-size: 0.54rem; color: var(--muted); margin-bottom: 4px; }
+.slot-pct { font-family: var(--sans); font-weight: 900; font-size: 1.2rem; color: var(--accent); }
+.slot-hex { font-size: 0.56rem; color: var(--muted); }
+
+.fil-rows { display: flex; flex-direction: column; gap: 6px; }
+.fil-row2 { background: var(--panel); border: 1px solid var(--border); display: flex; align-items: center; overflow: hidden; }
+.fil-sw { width: 44px; height: 60px; flex-shrink: 0; }
+.fil-bd { flex: 1; padding: 10px 14px; }
+.fil-nm { font-family: var(--sans); font-weight: 700; font-size: 0.85rem; margin-bottom: 2px; }
+.fil-mt { font-size: 0.56rem; color: var(--muted); margin-bottom: 5px; }
+.fil-sl { display: flex; gap: 4px; flex-wrap: wrap; }
+.sbadge { font-size: 0.56rem; font-family: var(--sans); font-weight: 700; padding: 1px 6px; border: 1px solid; }
+.sb1{border-color:#d4380d;color:#d4380d}.sb2{border-color:#597ef7;color:#597ef7}
+.sb3{border-color:#389e0d;color:#389e0d}.sb4{border-color:#d48806;color:#d48806}
+.fil-rt { padding: 10px 14px; text-align: right; flex-shrink: 0; }
+.fil-pc { font-family: var(--sans); font-weight: 900; font-size: 1.3rem; }
+.fil-mm { font-size: 0.56rem; color: var(--muted); margin-top: 2px; }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(60px);
+  background: var(--text); color: var(--bg); font-family: var(--sans); font-weight: 700;
+  font-size: 0.75rem; padding: 10px 20px; border-radius: 4px;
+  transition: transform 0.3s cubic-bezier(.16,1,.3,1); z-index: 2000; white-space: nowrap;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)} }
+.ani { animation: fadeUp 0.35s ease forwards; }
+
+@media (max-width: 700px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar { position: static; height: auto; }
+  .slots-grid { grid-template-columns: repeat(2,1fr); }
+  .main { padding: 24px 16px 60px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Language switcher -->
+<div class="lang-bar">
+  <button class="lang-btn active" onclick="setLang('de')" title="Deutsch">🇩🇪</button>
+  <button class="lang-btn" onclick="setLang('en')" title="English">🇬🇧</button>
+  <button class="lang-btn" onclick="setLang('es')" title="Español">🇪🇸</button>
+  <button class="lang-btn" onclick="setLang('fr')" title="Français">🇫🇷</button>
+  <button class="lang-btn" onclick="setLang('it')" title="Italiano">🇮🇹</button>
+  <button class="lang-btn" onclick="setLang('pt')" title="Português">🇧🇷</button>
+  <button class="lang-btn" onclick="setLang('pl')" title="Polski">🇵🇱</button>
+  <button class="lang-btn" onclick="setLang('zh')" title="简体中文">🇨🇳</button>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<div class="app">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="brand">
+      <div class="brand-title">Filament<br><span>Color Mixer</span></div>
+      <div class="brand-sub" data-t="brand_sub">AMS · 4 Slots · 19 Layer</div>
+    </div>
+
+    <!-- Add form -->
+    <div>
+      <div class="sec-label"><span data-t="add_filament">Filament hinzufügen</span></div>
+      <div class="form-grid">
+        <input class="inp" id="fColor_name" data-t-ph="ph_color" placeholder="Farbe (z.B. Weiß)">
+        <input class="inp" id="fBrand" data-t-ph="ph_brand" placeholder="Marke (optional)">
+        <div class="form-row">
+          <input type="color" class="cpick" id="fPick" value="#ffffff">
+          <input class="inp" id="fHex" placeholder="#FFFFFF" maxlength="7" style="flex:1">
+        </div>
+        <button class="btn-add" onclick="addFilament()" data-t="btn_add">+ Hinzufügen</button>
+      </div>
+    </div>
+
+    <!-- Bambu Lab presets -->
+    <div>
+      <div class="sec-label"><span data-t="lbl_presets">Bambu Lab Presets</span></div>
+      <div class="ie-row">
+        <button class="btn-ie preset" onclick="loadBambuPresets('basic')" data-t="btn_basic">+ Basic</button>
+        <button class="btn-ie preset" onclick="loadBambuPresets('matte')" data-t="btn_matte">+ Matte</button>
+        <button class="btn-ie preset" onclick="loadBambuPresets('all')" data-t="btn_all">+ Alle</button>
+      </div>
+    </div>
+
+    <!-- Import / Export -->
+    <div>
+      <div class="sec-label"><span data-t="lbl_impexp">Import / Export</span></div>
+      <div class="ie-row">
+        <button class="btn-ie import" onclick="importFilaments()" data-t="btn_import">⬆ Import</button>
+        <button class="btn-ie export" onclick="exportFilaments()" data-t="btn_export">⬇ Export</button>
+      </div>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="handleImport(event)">
+    </div>
+
+    <!-- Filament list -->
+    <div>
+      <div class="sec-label">
+        <span data-t="my_filaments">Meine Filamente</span>
+        <span class="count-badge" id="filCount">0</span>
+      </div>
+      <div class="filter-row">
+        <button class="chip active" data-filter="all" onclick="setFilter('all')" data-t="filter_all">Alle</button>
+        <button class="chip" data-filter="basic" onclick="setFilter('basic')" data-t="filter_basic">Basic</button>
+        <button class="chip" data-filter="matte" onclick="setFilter('matte')" data-t="filter_matte">Matte</button>
+        <button class="chip" data-filter="custom" onclick="setFilter('custom')" data-t="filter_custom">Eigene</button>
+      </div>
+      <div class="fil-items" id="filItems">
+        <div class="no-fils" data-t="no_filaments">Noch keine Filamente.</div>
+      </div>
+      <button class="btn-ie" style="margin-top:8px;width:100%" onclick="clearFilaments()" data-t="btn_clear">✕ Alle entfernen</button>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="page-title" id="pageTitle">Optimale<br><span>Mischung</span> finden</div>
+    <div class="page-desc" data-t="page_desc">Wähle eine Zielfarbe — das Tool berechnet die beste Slot-Belegung deiner Filamente.</div>
+
+    <div class="target-box" id="targetBox" data-label="Zielfarbe">
+      <div class="target-row">
+        <input type="color" class="tpick" id="targetPick" value="#3a7bd5">
+        <input type="text" class="target-hex" id="targetHex" value="#3A7BD5" maxlength="7" placeholder="#RRGGBB">
+        <button class="btn-calc" id="calcBtn" onclick="calculate()" data-t="btn_calc">▶ Berechnen</button>
+      </div>
+      <div id="status" data-t="status_ready">Filamente hinzufügen und Zielfarbe wählen.</div>
+    </div>
+
+    <div id="result">
+      <div class="res-label" data-t="lbl_compare">Farbvergleich</div>
+      <div class="compare">
+        <div class="compare-half" id="cTarget"><div class="compare-lbl" data-t="lbl_target">Zielfarbe</div><div class="compare-hex" id="cTargetHex"></div></div>
+        <div class="compare-half" id="cMixed"><div class="compare-lbl" data-t="lbl_result">Ergebnis</div><div class="compare-hex" id="cMixedHex"></div></div>
+      </div>
+
+      <div class="res-label" data-t="lbl_match">Übereinstimmung</div>
+      <div class="score-row ani">
+        <div class="score-num" id="scoreNum">—</div>
+        <div class="score-right">
+          <div class="score-lbl" data-t="lbl_accuracy">Match-Genauigkeit</div>
+          <div class="bar-bg"><div class="bar-fg" id="scoreBar" style="width:0"></div></div>
+          <div class="score-meta" id="scoreMeta"></div>
+        </div>
+      </div>
+
+      <div class="res-label" data-t="lbl_layers">Layer-Verteilung</div>
+      <div class="layer-box ani">
+        <div class="layer-track" id="layerTrack"></div>
+        <div class="layer-legend" id="layerLegend"></div>
+      </div>
+
+      <div class="res-label" data-t="lbl_slots">AMS Slot-Belegung</div>
+      <div class="slots-grid ani" id="slotsGrid"></div>
+
+      <div class="res-label" data-t="lbl_filaments">Filamente & Anteile</div>
+      <div class="fil-rows ani" id="filRows"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── TRANSLATIONS ──────────────────────────────────────────────────
+const T = {
+  de: {
+    brand_sub: 'AMS · 4 Slots · 19 Layer',
+    add_filament: 'Filament hinzufügen',
+    ph_color: 'Farbe (z.B. Weiß)',
+    ph_brand: 'Marke (optional)',
+    btn_add: '+ Hinzufügen',
+    lbl_presets: 'Bambu Lab Presets',
+    btn_basic: '+ Basic',
+    btn_matte: '+ Matte',
+    btn_all: '+ Alle',
+    lbl_impexp: 'Import / Export',
+    btn_import: '⬆ Import',
+    btn_export: '⬇ Export',
+    btn_clear: '✕ Alle entfernen',
+    my_filaments: 'Meine Filamente',
+    no_filaments: 'Noch keine Filamente.',
+    filter_all: 'Alle',
+    filter_basic: 'Basic',
+    filter_matte: 'Matte',
+    filter_custom: 'Eigene',
+    page_title: 'Optimale <span>Mischung</span> finden',
+    page_desc: 'Wähle eine Zielfarbe — das Tool berechnet die beste Slot-Belegung deiner Filamente.',
+    btn_calc: '▶ Berechnen',
+    status_ready: 'Filamente hinzufügen und Zielfarbe wählen.',
+    status_loading: 'Berechne optimale Slot-Belegung…',
+    status_done: (n, t) => `✓ Beste Belegung mit ${n} Filament(en) — aus ${t} verfügbaren.`,
+    status_err_no_fils: 'Bitte zuerst Filamente hinzufügen.',
+    status_err_hex: 'Ungültiger HEX-Wert. Format: #RRGGBB',
+    lbl_compare: 'Farbvergleich',
+    lbl_target: 'Zielfarbe',
+    lbl_result: 'Ergebnis Mix',
+    lbl_match: 'Übereinstimmung',
+    lbl_accuracy: 'Match-Genauigkeit',
+    lbl_layers: 'Layer-Verteilung',
+    lbl_slots: 'AMS Slot-Belegung',
+    lbl_filaments: 'Filamente & Anteile',
+    slot_label: n => `SLOT ${n}`,
+    layer_label: n => `${n} Layer`,
+    slot_legend: (s, name, pct) => `Slot ${s}: ${name} (${pct}%)`,
+    layer_mm: mm => `${mm}mm`,
+    dist_meta: (d, n, tot, lh) => `RGB-Distanz: ${d} · ${n} Filament(e) · ${tot} Layer · ${lh}mm/Layer`,
+    target_label: 'Zielfarbe',
+    toast_exported: 'Filamente exportiert ✓',
+    toast_imported: n => `${n} Filamente importiert ✓`,
+    toast_err: 'Import fehlgeschlagen',
+    toast_preset: n => `${n} Bambu-Filamente geladen ✓`,
+    toast_preset_none: 'Alle Filamente sind bereits geladen.',
+    toast_cleared: 'Alle Filamente entfernt ✓',
+    confirm_clear: 'Wirklich alle Filamente entfernen?',
+  },
+  en: {
+    brand_sub: 'AMS · 4 Slots · 19 Layers',
+    add_filament: 'Add Filament',
+    ph_color: 'Color (e.g. White)',
+    ph_brand: 'Brand (optional)',
+    btn_add: '+ Add',
+    lbl_presets: 'Bambu Lab Presets',
+    btn_basic: '+ Basic',
+    btn_matte: '+ Matte',
+    btn_all: '+ All',
+    lbl_impexp: 'Import / Export',
+    btn_import: '⬆ Import',
+    btn_export: '⬇ Export',
+    btn_clear: '✕ Remove all',
+    my_filaments: 'My Filaments',
+    no_filaments: 'No filaments yet.',
+    filter_all: 'All',
+    filter_basic: 'Basic',
+    filter_matte: 'Matte',
+    filter_custom: 'Custom',
+    page_title: 'Find the Best <span>Color Mix</span>',
+    page_desc: 'Choose a target color — the tool calculates the optimal slot assignment for your filaments.',
+    btn_calc: '▶ Calculate',
+    status_ready: 'Add filaments and choose a target color.',
+    status_loading: 'Calculating optimal slot assignment…',
+    status_done: (n, t) => `✓ Best mix with ${n} filament(s) — from ${t} available.`,
+    status_err_no_fils: 'Please add filaments first.',
+    status_err_hex: 'Invalid HEX value. Format: #RRGGBB',
+    lbl_compare: 'Color Comparison',
+    lbl_target: 'Target Color',
+    lbl_result: 'Mix Result',
+    lbl_match: 'Match Score',
+    lbl_accuracy: 'Match Accuracy',
+    lbl_layers: 'Layer Distribution',
+    lbl_slots: 'AMS Slot Assignment',
+    lbl_filaments: 'Filaments & Shares',
+    slot_label: n => `SLOT ${n}`,
+    layer_label: n => `${n} Layers`,
+    slot_legend: (s, name, pct) => `Slot ${s}: ${name} (${pct}%)`,
+    layer_mm: mm => `${mm}mm`,
+    dist_meta: (d, n, tot, lh) => `RGB distance: ${d} · ${n} filament(s) · ${tot} layers · ${lh}mm/layer`,
+    target_label: 'Target Color',
+    toast_exported: 'Filaments exported ✓',
+    toast_imported: n => `${n} filaments imported ✓`,
+    toast_err: 'Import failed',
+    toast_preset: n => `${n} Bambu filaments loaded ✓`,
+    toast_preset_none: 'All filaments already loaded.',
+    toast_cleared: 'All filaments removed ✓',
+    confirm_clear: 'Remove all filaments?',
+  },
+  es: {
+    brand_sub: 'AMS · 4 Ranuras · 19 Capas',
+    add_filament: 'Añadir Filamento',
+    ph_color: 'Color (ej. Blanco)',
+    ph_brand: 'Marca (opcional)',
+    btn_add: '+ Añadir',
+    lbl_presets: 'Bambu Lab Presets',
+    btn_basic: '+ Basic',
+    btn_matte: '+ Matte',
+    btn_all: '+ Todos',
+    lbl_impexp: 'Importar / Exportar',
+    btn_import: '⬆ Importar',
+    btn_export: '⬇ Exportar',
+    btn_clear: '✕ Quitar todos',
+    my_filaments: 'Mis Filamentos',
+    no_filaments: 'Sin filamentos aún.',
+    filter_all: 'Todos',
+    filter_basic: 'Basic',
+    filter_matte: 'Matte',
+    filter_custom: 'Propios',
+    page_title: 'Encontrar la <span>Mezcla</span> Óptima',
+    page_desc: 'Elige un color objetivo — la herramienta calcula la mejor asignación de ranuras.',
+    btn_calc: '▶ Calcular',
+    status_ready: 'Añade filamentos y elige un color objetivo.',
+    status_loading: 'Calculando asignación óptima…',
+    status_done: (n, t) => `✓ Mejor mezcla con ${n} filamento(s) — de ${t} disponibles.`,
+    status_err_no_fils: 'Por favor, añade filamentos primero.',
+    status_err_hex: 'Valor HEX inválido. Formato: #RRGGBB',
+    lbl_compare: 'Comparación de Colores',
+    lbl_target: 'Color Objetivo',
+    lbl_result: 'Resultado Mix',
+    lbl_match: 'Coincidencia',
+    lbl_accuracy: 'Precisión',
+    lbl_layers: 'Distribución de Capas',
+    lbl_slots: 'Asignación de Ranuras AMS',
+    lbl_filaments: 'Filamentos y Proporciones',
+    slot_label: n => `RANURA ${n}`,
+    layer_label: n => `${n} Capas`,
+    slot_legend: (s, name, pct) => `Ranura ${s}: ${name} (${pct}%)`,
+    layer_mm: mm => `${mm}mm`,
+    dist_meta: (d, n, tot, lh) => `Distancia RGB: ${d} · ${n} filamento(s) · ${tot} capas · ${lh}mm/capa`,
+    target_label: 'Color Objetivo',
+    toast_exported: 'Filamentos exportados ✓',
+    toast_imported: n => `${n} filamentos importados ✓`,
+    toast_err: 'Error al importar',
+    toast_preset: n => `${n} filamentos Bambu cargados ✓`,
+    toast_preset_none: 'Todos los filamentos ya están cargados.',
+    toast_cleared: 'Todos los filamentos eliminados ✓',
+    confirm_clear: '¿Eliminar todos los filamentos?',
+  },
+  fr: {
+    brand_sub: 'AMS · 4 Slots · 19 Couches',
+    add_filament: 'Ajouter un filament',
+    ph_color: 'Couleur (ex. Blanc)',
+    ph_brand: 'Marque (optionnel)',
+    btn_add: '+ Ajouter',
+    lbl_presets: 'Préréglages Bambu Lab',
+    btn_basic: '+ Basic',
+    btn_matte: '+ Matte',
+    btn_all: '+ Tous',
+    lbl_impexp: 'Importer / Exporter',
+    btn_import: '⬆ Importer',
+    btn_export: '⬇ Exporter',
+    btn_clear: '✕ Tout supprimer',
+    my_filaments: 'Mes filaments',
+    no_filaments: 'Aucun filament pour l\'instant.',
+    filter_all: 'Tous',
+    filter_basic: 'Basic',
+    filter_matte: 'Matte',
+    filter_custom: 'Personnels',
+    page_title: 'Trouver le meilleur <span>mélange</span>',
+    page_desc: 'Choisissez une couleur cible — l\'outil calcule l\'assignation optimale des slots.',
+    btn_calc: '▶ Calculer',
+    status_ready: 'Ajoutez des filaments et choisissez une couleur cible.',
+    status_loading: 'Calcul de l\'assignation optimale…',
+    status_done: (n, t) => `✓ Meilleur mélange avec ${n} filament(s) — parmi ${t} disponibles.`,
+    status_err_no_fils: 'Veuillez d\'abord ajouter des filaments.',
+    status_err_hex: 'Valeur HEX invalide. Format : #RRGGBB',
+    lbl_compare: 'Comparaison des couleurs',
+    lbl_target: 'Couleur cible',
+    lbl_result: 'Résultat du mélange',
+    lbl_match: 'Correspondance',
+    lbl_accuracy: 'Précision du match',
+    lbl_layers: 'Répartition des couches',
+    lbl_slots: 'Assignation des slots AMS',
+    lbl_filaments: 'Filaments et proportions',
+    slot_label: n => `SLOT ${n}`,
+    layer_label: n => `${n} couches`,
+    slot_legend: (s, name, pct) => `Slot ${s} : ${name} (${pct}%)`,
+    layer_mm: mm => `${mm}mm`,
+    dist_meta: (d, n, tot, lh) => `Distance RGB : ${d} · ${n} filament(s) · ${tot} couches · ${lh}mm/couche`,
+    target_label: 'Couleur cible',
+    toast_exported: 'Filaments exportés ✓',
+    toast_imported: n => `${n} filaments importés ✓`,
+    toast_err: 'Échec de l\'importation',
+    toast_preset: n => `${n} filaments Bambu chargés ✓`,
+    toast_preset_none: 'Tous les filaments sont déjà chargés.',
+    toast_cleared: 'Tous les filaments supprimés ✓',
+    confirm_clear: 'Supprimer tous les filaments ?',
+  },
+  it: {
+    brand_sub: 'AMS · 4 Slot · 19 Layer',
+    add_filament: 'Aggiungi filamento',
+    ph_color: 'Colore (es. Bianco)',
+    ph_brand: 'Marca (opzionale)',
+    btn_add: '+ Aggiungi',
+    lbl_presets: 'Preset Bambu Lab',
+    btn_basic: '+ Basic',
+    btn_matte: '+ Matte',
+    btn_all: '+ Tutti',
+    lbl_impexp: 'Importa / Esporta',
+    btn_import: '⬆ Importa',
+    btn_export: '⬇ Esporta',
+    btn_clear: '✕ Rimuovi tutti',
+    my_filaments: 'I miei filamenti',
+    no_filaments: 'Nessun filamento ancora.',
+    filter_all: 'Tutti',
+    filter_basic: 'Basic',
+    filter_matte: 'Matte',
+    filter_custom: 'Propri',
+    page_title: 'Trova la migliore <span>miscela</span>',
+    page_desc: 'Scegli un colore target — lo strumento calcola l\'assegnazione ottimale degli slot.',
+    btn_calc: '▶ Calcola',
+    status_ready: 'Aggiungi filamenti e scegli un colore target.',
+    status_loading: 'Calcolo dell\'assegnazione ottimale…',
+    status_done: (n, t) => `✓ Migliore miscela con ${n} filamento/i — da ${t} disponibili.`,
+    status_err_no_fils: 'Aggiungi prima dei filamenti.',
+    status_err_hex: 'Valore HEX non valido. Formato: #RRGGBB',
+    lbl_compare: 'Confronto colori',
+    lbl_target: 'Colore target',
+    lbl_result: 'Risultato mix',
+    lbl_match: 'Corrispondenza',
+    lbl_accuracy: 'Precisione match',
+    lbl_layers: 'Distribuzione layer',
+    lbl_slots: 'Assegnazione slot AMS',
+    lbl_filaments: 'Filamenti e proporzioni',
+    slot_label: n => `SLOT ${n}`,
+    layer_label: n => `${n} layer`,
+    slot_legend: (s, name, pct) => `Slot ${s}: ${name} (${pct}%)`,
+    layer_mm: mm => `${mm}mm`,
+    dist_meta: (d, n, tot, lh) => `Distanza RGB: ${d} · ${n} filamento/i · ${tot} layer · ${lh}mm/layer`,
+    target_label: 'Colore target',
+    toast_exported: 'Filamenti esportati ✓',
+    toast_imported: n => `${n} filamenti importati ✓`,
+    toast_err: 'Importazione fallita',
+    toast_preset: n => `${n} filamenti Bambu caricati ✓`,
+    toast_preset_none: 'Tutti i filamenti sono già caricati.',
+    toast_cleared: 'Tutti i filamenti rimossi ✓',
+    confirm_clear: 'Rimuovere davvero tutti i filamenti?',
+  },
+  pt: {
+    brand_sub: 'AMS · 4 Slots · 19 Camadas',
+    add_filament: 'Adicionar filamento',
+    ph_color: 'Cor (ex. Branco)',
+    ph_brand: 'Marca (opcional)',
+    btn_add: '+ Adicionar',
+    lbl_presets: 'Predefinições Bambu Lab',
+    btn_basic: '+ Basic',
+    btn_matte: '+ Matte',
+    btn_all: '+ Todos',
+    lbl_impexp: 'Importar / Exportar',
+    btn_import: '⬆ Importar',
+    btn_export: '⬇ Exportar',
+    btn_clear: '✕ Remover todos',
+    my_filaments: 'Meus filamentos',
+    no_filaments: 'Sem filamentos ainda.',
+    filter_all: 'Todos',
+    filter_basic: 'Basic',
+    filter_matte: 'Matte',
+    filter_custom: 'Próprios',
+    page_title: 'Encontrar a melhor <span>mistura</span>',
+    page_desc: 'Escolha uma cor alvo — a ferramenta calcula a melhor atribuição de slots.',
+    btn_calc: '▶ Calcular',
+    status_ready: 'Adicione filamentos e escolha uma cor alvo.',
+    status_loading: 'Calculando atribuição ótima…',
+    status_done: (n, t) => `✓ Melhor mistura com ${n} filamento(s) — de ${t} disponíveis.`,
+    status_err_no_fils: 'Adicione filamentos primeiro.',
+    status_err_hex: 'Valor HEX inválido. Formato: #RRGGBB',
+    lbl_compare: 'Comparação de cores',
+    lbl_target: 'Cor alvo',
+    lbl_result: 'Resultado mix',
+    lbl_match: 'Correspondência',
+    lbl_accuracy: 'Precisão',
+    lbl_layers: 'Distribuição de camadas',
+    lbl_slots: 'Atribuição de slots AMS',
+    lbl_filaments: 'Filamentos e proporções',
+    slot_label: n => `SLOT ${n}`,
+    layer_label: n => `${n} camadas`,
+    slot_legend: (s, name, pct) => `Slot ${s}: ${name} (${pct}%)`,
+    layer_mm: mm => `${mm}mm`,
+    dist_meta: (d, n, tot, lh) => `Distância RGB: ${d} · ${n} filamento(s) · ${tot} camadas · ${lh}mm/camada`,
+    target_label: 'Cor alvo',
+    toast_exported: 'Filamentos exportados ✓',
+    toast_imported: n => `${n} filamentos importados ✓`,
+    toast_err: 'Falha na importação',
+    toast_preset: n => `${n} filamentos Bambu carregados ✓`,
+    toast_preset_none: 'Todos os filamentos já estão carregados.',
+    toast_cleared: 'Todos os filamentos removidos ✓',
+    confirm_clear: 'Remover todos os filamentos?',
+  },
+  pl: {
+    brand_sub: 'AMS · 4 Sloty · 19 Warstw',
+    add_filament: 'Dodaj filament',
+    ph_color: 'Kolor (np. Biały)',
+    ph_brand: 'Marka (opcjonalnie)',
+    btn_add: '+ Dodaj',
+    lbl_presets: 'Presety Bambu Lab',
+    btn_basic: '+ Basic',
+    btn_matte: '+ Matte',
+    btn_all: '+ Wszystkie',
+    lbl_impexp: 'Import / Eksport',
+    btn_import: '⬆ Import',
+    btn_export: '⬇ Eksport',
+    btn_clear: '✕ Usuń wszystkie',
+    my_filaments: 'Moje filamenty',
+    no_filaments: 'Brak filamentów.',
+    filter_all: 'Wszystkie',
+    filter_basic: 'Basic',
+    filter_matte: 'Matte',
+    filter_custom: 'Własne',
+    page_title: 'Znajdź najlepszą <span>mieszankę</span>',
+    page_desc: 'Wybierz kolor docelowy — narzędzie obliczy optymalne przypisanie slotów.',
+    btn_calc: '▶ Oblicz',
+    status_ready: 'Dodaj filamenty i wybierz kolor docelowy.',
+    status_loading: 'Obliczanie optymalnego przypisania…',
+    status_done: (n, t) => `✓ Najlepsza mieszanka z ${n} filament(ów) — z ${t} dostępnych.`,
+    status_err_no_fils: 'Najpierw dodaj filamenty.',
+    status_err_hex: 'Nieprawidłowa wartość HEX. Format: #RRGGBB',
+    lbl_compare: 'Porównanie kolorów',
+    lbl_target: 'Kolor docelowy',
+    lbl_result: 'Wynik mieszanki',
+    lbl_match: 'Zgodność',
+    lbl_accuracy: 'Dokładność dopasowania',
+    lbl_layers: 'Rozkład warstw',
+    lbl_slots: 'Przypisanie slotów AMS',
+    lbl_filaments: 'Filamenty i udziały',
+    slot_label: n => `SLOT ${n}`,
+    layer_label: n => `${n} warstw`,
+    slot_legend: (s, name, pct) => `Slot ${s}: ${name} (${pct}%)`,
+    layer_mm: mm => `${mm}mm`,
+    dist_meta: (d, n, tot, lh) => `Dystans RGB: ${d} · ${n} filament(ów) · ${tot} warstw · ${lh}mm/warstwę`,
+    target_label: 'Kolor docelowy',
+    toast_exported: 'Filamenty wyeksportowane ✓',
+    toast_imported: n => `Zaimportowano ${n} filamentów ✓`,
+    toast_err: 'Import nieudany',
+    toast_preset: n => `Załadowano ${n} filamentów Bambu ✓`,
+    toast_preset_none: 'Wszystkie filamenty są już załadowane.',
+    toast_cleared: 'Wszystkie filamenty usunięte ✓',
+    confirm_clear: 'Na pewno usunąć wszystkie filamenty?',
+  },
+  zh: {
+    brand_sub: 'AMS · 4 槽位 · 19 层',
+    add_filament: '添加耗材',
+    ph_color: '颜色（如 白色）',
+    ph_brand: '品牌（可选）',
+    btn_add: '+ 添加',
+    lbl_presets: 'Bambu Lab 预设',
+    btn_basic: '+ Basic',
+    btn_matte: '+ Matte',
+    btn_all: '+ 全部',
+    lbl_impexp: '导入 / 导出',
+    btn_import: '⬆ 导入',
+    btn_export: '⬇ 导出',
+    btn_clear: '✕ 清除全部',
+    my_filaments: '我的耗材',
+    no_filaments: '暂无耗材。',
+    filter_all: '全部',
+    filter_basic: 'Basic',
+    filter_matte: 'Matte',
+    filter_custom: '自定义',
+    page_title: '找到最佳<span>配色</span>',
+    page_desc: '选择目标颜色 — 工具将计算最佳的槽位分配。',
+    btn_calc: '▶ 计算',
+    status_ready: '添加耗材并选择目标颜色。',
+    status_loading: '正在计算最佳分配…',
+    status_done: (n, t) => `✓ 使用 ${n} 种耗材的最佳配色 — 来自 ${t} 种可用。`,
+    status_err_no_fils: '请先添加耗材。',
+    status_err_hex: 'HEX 值无效。格式：#RRGGBB',
+    lbl_compare: '颜色对比',
+    lbl_target: '目标颜色',
+    lbl_result: '混合结果',
+    lbl_match: '匹配度',
+    lbl_accuracy: '匹配精度',
+    lbl_layers: '层分布',
+    lbl_slots: 'AMS 槽位分配',
+    lbl_filaments: '耗材与占比',
+    slot_label: n => `槽位 ${n}`,
+    layer_label: n => `${n} 层`,
+    slot_legend: (s, name, pct) => `槽位 ${s}: ${name} (${pct}%)`,
+    layer_mm: mm => `${mm}mm`,
+    dist_meta: (d, n, tot, lh) => `RGB 距离: ${d} · ${n} 种耗材 · ${tot} 层 · ${lh}mm/层`,
+    target_label: '目标颜色',
+    toast_exported: '耗材已导出 ✓',
+    toast_imported: n => `已导入 ${n} 种耗材 ✓`,
+    toast_err: '导入失败',
+    toast_preset: n => `已加载 ${n} 种 Bambu 耗材 ✓`,
+    toast_preset_none: '所有耗材已加载。',
+    toast_cleared: '所有耗材已清除 ✓',
+    confirm_clear: '确定要清除所有耗材吗？',
+  }
+};
+
+function detectLang() {
+  // 1. Honor an explicit user choice if one is saved.
+  const stored = localStorage.getItem('fcm_lang');
+  if (stored && T[stored]) return stored;
+  // 2. Otherwise pick the first supported locale from the browser's
+  //    preference list (navigator.languages is ordered by preference).
+  const supported = Object.keys(T);
+  const candidates = (navigator.languages && navigator.languages.length)
+    ? navigator.languages
+    : [navigator.language || navigator.userLanguage || ''];
+  for (const c of candidates) {
+    const code = (c || '').toLowerCase().split('-')[0]; // 'en-US' → 'en'
+    if (supported.includes(code)) return code;
+  }
+  // 3. Fallback.
+  return 'en';
+}
+
+let currentLang = detectLang();
+
+function t(key, ...args) {
+  const val = T[currentLang][key];
+  return typeof val === 'function' ? val(...args) : (val || key);
+}
+
+function setLang(lang) {
+  currentLang = lang;
+  localStorage.setItem('fcm_lang', lang);
+  document.documentElement.setAttribute('lang', lang);
+  document.querySelectorAll('.lang-btn').forEach(b =>
+    b.classList.toggle('active', b.getAttribute('onclick').includes(`'${lang}'`))
+  );
+  applyTranslations();
+}
+
+function applyTranslations() {
+  document.querySelectorAll('[data-t]').forEach(el => {
+    const val = T[currentLang][el.getAttribute('data-t')];
+    if (val && typeof val === 'string') el.innerHTML = val;
+  });
+  document.querySelectorAll('[data-t-ph]').forEach(el => {
+    const val = T[currentLang][el.getAttribute('data-t-ph')];
+    if (val) el.placeholder = val;
+  });
+  document.getElementById('pageTitle').innerHTML = t('page_title');
+  document.getElementById('targetBox').setAttribute('data-label', t('target_label'));
+}
+
+// ── CONSTANTS ─────────────────────────────────────────────────────
+const SLOT_LAYERS = {1:5,2:5,3:5,4:4};
+const TOTAL_LAYERS = 19;
+const TOTAL_HEIGHT = 1.70;
+const SLOT_WEIGHT = {1:5/19,2:5/19,3:5/19,4:4/19};
+const LAYER_PATTERN = [1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3];
+
+// ── BAMBU LAB PRESETS ─────────────────────────────────────────────
+// Official hex codes from Bambu Lab's published "Filament Hex Code Table" PDFs.
+const BAMBU_PRESETS = {
+  basic: [
+    {color_name: 'Jade White',       hex: '#FFFFFF'},
+    {color_name: 'Beige',            hex: '#F7E6DE'},
+    {color_name: 'Light Gray',       hex: '#D1D3D5'},
+    {color_name: 'Silver',           hex: '#A6A9AA'},
+    {color_name: 'Gray',             hex: '#8E9089'},
+    {color_name: 'Blue Grey',        hex: '#5B6579'},
+    {color_name: 'Dark Gray',        hex: '#545454'},
+    {color_name: 'Black',            hex: '#000000'},
+    {color_name: 'Gold',             hex: '#E4BD68'},
+    {color_name: 'Bronze',           hex: '#847D48'},
+    {color_name: 'Cocoa Brown',      hex: '#6F5034'},
+    {color_name: 'Brown',            hex: '#9D432C'},
+    {color_name: 'Pumpkin Orange',   hex: '#FF9016'},
+    {color_name: 'Orange',           hex: '#FF6A13'},
+    {color_name: 'Yellow',           hex: '#F4EE2A'},
+    {color_name: 'Sunflower Yellow', hex: '#FEC600'},
+    {color_name: 'Bright Green',     hex: '#BECF00'},
+    {color_name: 'Bambu Green',      hex: '#00AE42'},
+    {color_name: 'Mistletoe Green',  hex: '#3F8E43'},
+    {color_name: 'Turquoise',        hex: '#00B1B7'},
+    {color_name: 'Cyan',             hex: '#0086D6'},
+    {color_name: 'Cobalt Blue',      hex: '#0056B8'},
+    {color_name: 'Blue',             hex: '#0A2989'},
+    {color_name: 'Indigo Purple',    hex: '#482960'},
+    {color_name: 'Purple',           hex: '#5E43B7'},
+    {color_name: 'Magenta',          hex: '#EC008C'},
+    {color_name: 'Hot Pink',         hex: '#F5547C'},
+    {color_name: 'Pink',             hex: '#F55A74'},
+    {color_name: 'Maroon Red',       hex: '#9D2235'},
+    {color_name: 'Red',              hex: '#C12E1F'},
+  ],
+  matte: [
+    {color_name: 'Ivory White',      hex: '#FFFFFF'},
+    {color_name: 'Bone White',       hex: '#CBC6B8'},
+    {color_name: 'Desert Tan',       hex: '#E8DBB7'},
+    {color_name: 'Latte Brown',      hex: '#D3B7A7'},
+    {color_name: 'Caramel',          hex: '#AE835B'},
+    {color_name: 'Terracotta',       hex: '#B15533'},
+    {color_name: 'Dark Brown',       hex: '#7D6556'},
+    {color_name: 'Dark Chocolate',   hex: '#4D3324'},
+    {color_name: 'Sakura Pink',      hex: '#E8AFCF'},
+    {color_name: 'Lilac Purple',     hex: '#AE96D4'},
+    {color_name: 'Plum',             hex: '#950051'},
+    {color_name: 'Dark Red',         hex: '#BB3D43'},
+    {color_name: 'Scarlet Red',      hex: '#DE4343'},
+    {color_name: 'Mandarin Orange',  hex: '#F99963'},
+    {color_name: 'Lemon Yellow',     hex: '#F7D959'},
+    {color_name: 'Apple Green',      hex: '#C2E189'},
+    {color_name: 'Grass Green',      hex: '#61C680'},
+    {color_name: 'Dark Green',       hex: '#68724D'},
+    {color_name: 'Ice Blue',         hex: '#A3D8E1'},
+    {color_name: 'Sky Blue',         hex: '#56B7E6'},
+    {color_name: 'Marine Blue',      hex: '#0078BF'},
+    {color_name: 'Dark Blue',        hex: '#042F56'},
+    {color_name: 'Ash Gray',         hex: '#9B9EA0'},
+    {color_name: 'Nardo Gray',       hex: '#757575'},
+    {color_name: 'Charcoal',         hex: '#000000'},
+  ],
+};
+const BRAND_BASIC = 'Bambu Lab PLA Basic';
+const BRAND_MATTE = 'Bambu Lab PLA Matte';
+
+// ── STORAGE ───────────────────────────────────────────────────────
+let filaments = [];
+let activeFilter = 'all';
+
+function loadFilaments() {
+  try { filaments = JSON.parse(localStorage.getItem('fcm_filaments') || 'null'); }
+  catch { filaments = null; }
+  // Preload Bambu Lab Basic + Matte presets on first run (no stored state).
+  if (!Array.isArray(filaments)) {
+    filaments = [];
+    addPresetSet('basic', true);
+    addPresetSet('matte', true);
+    saveFilaments();
+  }
+  renderFilamentList();
+}
+
+function saveFilaments() {
+  localStorage.setItem('fcm_filaments', JSON.stringify(filaments));
+}
+
+function addPresetSet(which, silent) {
+  const sets = which === 'all'
+    ? [['basic', BRAND_BASIC], ['matte', BRAND_MATTE]]
+    : [[which, which === 'basic' ? BRAND_BASIC : BRAND_MATTE]];
+  const existing = new Set(filaments.map(f => (f.hex + '|' + f.color_name).toLowerCase()));
+  let added = 0;
+  for (const [key, brand] of sets) {
+    for (const p of BAMBU_PRESETS[key]) {
+      const k = (p.hex + '|' + p.color_name).toLowerCase();
+      if (existing.has(k)) continue;
+      filaments.push({
+        id: Date.now() + Math.random(),
+        color_name: p.color_name,
+        brand,
+        hex: p.hex,
+      });
+      existing.add(k);
+      added++;
+    }
+  }
+  return added;
+}
+
+function loadBambuPresets(which) {
+  const added = addPresetSet(which);
+  saveFilaments();
+  renderFilamentList();
+  if (added > 0) showToast(t('toast_preset', added));
+  else showToast(t('toast_preset_none'));
+}
+
+function clearFilaments() {
+  if (!filaments.length) return;
+  if (!confirm(t('confirm_clear'))) return;
+  filaments = [];
+  saveFilaments();
+  renderFilamentList();
+  showToast(t('toast_cleared'));
+}
+
+// ── IMPORT / EXPORT ───────────────────────────────────────────────
+function exportFilaments() {
+  const clean = filaments.map(f => ({color_name: f.color_name, brand: f.brand || '', hex: f.hex}));
+  const data = JSON.stringify(clean, null, 2);
+  const blob = new Blob([data], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'filamente.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(t('toast_exported'));
+}
+
+function importFilaments() {
+  document.getElementById('importFile').click();
+}
+
+function handleImport(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!Array.isArray(data)) throw new Error('invalid');
+      // Merge: add only filaments not already present (by hex+name)
+      const existing = new Set(filaments.map(f => f.hex + f.color_name));
+      let added = 0;
+      data.forEach(f => {
+        if (f.hex && f.color_name) {
+          if (!existing.has(f.hex + f.color_name)) {
+            filaments.push({id: Date.now() + Math.random(), color_name: f.color_name, brand: f.brand || '', hex: f.hex});
+            added++;
+          }
+        }
+      });
+      saveFilaments();
+      renderFilamentList();
+      showToast(t('toast_imported', added));
+    } catch {
+      showToast(t('toast_err'));
+    }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ── COLOR PICKERS ─────────────────────────────────────────────────
+const fPickEl = document.getElementById('fPick');
+const fHexEl  = document.getElementById('fHex');
+fPickEl.addEventListener('input', () => fHexEl.value = fPickEl.value.toUpperCase());
+fHexEl.addEventListener('input', () => {
+  if (/^#[0-9a-fA-F]{6}$/.test(fHexEl.value.trim())) fPickEl.value = fHexEl.value.trim();
+});
+
+const tPickEl = document.getElementById('targetPick');
+const tHexEl  = document.getElementById('targetHex');
+tPickEl.addEventListener('input', () => tHexEl.value = tPickEl.value.toUpperCase());
+tHexEl.addEventListener('input', () => {
+  if (/^#[0-9a-fA-F]{6}$/.test(tHexEl.value.trim())) tPickEl.value = tHexEl.value.trim();
+});
+tHexEl.addEventListener('keydown', e => e.key === 'Enter' && calculate());
+
+// ── ADD FILAMENT ──────────────────────────────────────────────────
+function addFilament() {
+  const color_name = document.getElementById('fColor_name').value.trim();
+  const brand = document.getElementById('fBrand').value.trim();
+  const hex = fHexEl.value.trim() || fPickEl.value;
+  if (!color_name) { document.getElementById('fColor_name').focus(); return; }
+  if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return;
+  filaments.push({id: Date.now(), color_name, brand, hex});
+  saveFilaments();
+  renderFilamentList();
+  document.getElementById('fColor_name').value = '';
+  document.getElementById('fBrand').value = '';
+  fHexEl.value = '#FFFFFF';
+  fPickEl.value = '#ffffff';
+}
+
+function deleteFilament(id) {
+  filaments = filaments.filter(f => f.id !== id);
+  saveFilaments();
+  renderFilamentList();
+}
+
+function setFilter(f) {
+  activeFilter = f;
+  document.querySelectorAll('.chip').forEach(c =>
+    c.classList.toggle('active', c.getAttribute('data-filter') === f));
+  renderFilamentList();
+}
+
+function matchesFilter(f) {
+  if (activeFilter === 'all') return true;
+  const b = (f.brand || '').toLowerCase();
+  if (activeFilter === 'basic')  return b === BRAND_BASIC.toLowerCase();
+  if (activeFilter === 'matte')  return b === BRAND_MATTE.toLowerCase();
+  if (activeFilter === 'custom') return b !== BRAND_BASIC.toLowerCase() && b !== BRAND_MATTE.toLowerCase();
+  return true;
+}
+
+function renderFilamentList() {
+  const el = document.getElementById('filItems');
+  document.getElementById('filCount').textContent = filaments.length;
+  const visible = filaments.filter(matchesFilter);
+  if (!visible.length) {
+    el.innerHTML = `<div class="no-fils">${t('no_filaments')}</div>`;
+    return;
+  }
+  el.innerHTML = visible.map(f => `
+    <div class="fil-item">
+      <div class="fil-dot" style="background:${f.hex}"></div>
+      <div class="fil-info">
+        <div class="fil-name">${f.color_name}</div>
+        <div class="fil-brand">${f.brand || f.hex}</div>
+      </div>
+      <button class="fil-del" onclick="deleteFilament(${f.id})">×</button>
+    </div>`).join('');
+}
+
+// ── COLOR MATH ────────────────────────────────────────────────────
+function hexToRgb(h) {
+  h = h.replace('#','');
+  return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
+}
+function rgbToHex(r,g,b) {
+  return '#'+[r,g,b].map(v=>Math.round(v).toString(16).padStart(2,'0').toUpperCase()).join('');
+}
+function colorDist(a,b) { return Math.sqrt(a.reduce((s,v,i)=>s+(v-b[i])**2,0)); }
+function matchPct(d) { return Math.round((1-d/Math.sqrt(3*255**2))*1000)/10; }
+
+function computeMix(asgn, fils) {
+  let r=0,g=0,b=0;
+  for (const [slot,idx] of Object.entries(asgn)) {
+    const w=SLOT_WEIGHT[+slot], rgb=fils[idx].rgb;
+    r+=w*rgb[0]; g+=w*rgb[1]; b+=w*rgb[2];
+  }
+  return [r,g,b];
+}
+
+function* allAssignments(n) {
+  function* gen(idx, cur) {
+    if (idx===4) { if(new Set(Object.values(cur)).size===n) yield{...cur}; return; }
+    for(let c=0;c<n;c++){cur[idx+1]=c; yield* gen(idx+1,cur);}
+  }
+  yield* gen(0,{});
+}
+
+function* combinations(arr,k) {
+  if(k===0){yield[];return;}
+  for(let i=0;i<=arr.length-k;i++)
+    for(const rest of combinations(arr.slice(i+1),k-1)) yield[arr[i],...rest];
+}
+
+// ── CALCULATE ─────────────────────────────────────────────────────
+function calculate() {
+  if (!filaments.length) { setStatus(t('status_err_no_fils'),'err'); return; }
+  let hex = tHexEl.value.trim();
+  if (!hex.startsWith('#')) hex='#'+hex;
+  if (!/^#[0-9a-fA-F]{6}$/.test(hex)) { setStatus(t('status_err_hex'),'err'); return; }
+  document.getElementById('calcBtn').disabled=true;
+  setStatus(t('status_loading'),'loading');
+  setTimeout(()=>{
+    try {
+      const res = findBestMix(hex);
+      render(res, hex);
+      setStatus(t('status_done', res.best.numFilaments, filaments.length));
+    } catch(e) { setStatus('Error: '+e.message,'err'); }
+    finally { document.getElementById('calcBtn').disabled=false; }
+  },10);
+}
+
+function findBestMix(targetHex) {
+  const targetRgb = hexToRgb(targetHex);
+  const fils = filaments.map(f=>({...f, rgb:hexToRgb(f.hex)}));
+  const cands = [...fils].sort((a,b)=>colorDist(a.rgb,targetRgb)-colorDist(b.rgb,targetRgb)).slice(0,10);
+  let best=null, bestDist=Infinity;
+  for(let n=1;n<=Math.min(4,cands.length);n++) {
+    for(const combo of combinations(cands,n)) {
+      for(const asgn of allAssignments(n)) {
+        const mixed=computeMix(asgn,combo);
+        const dist=colorDist(mixed,targetRgb);
+        if(dist<bestDist) {
+          bestDist=dist;
+          const slotInfo=[1,2,3,4].map(slot=>({
+            slot, layers:SLOT_LAYERS[slot],
+            weightPct:Math.round(SLOT_WEIGHT[slot]*1000)/10,
+            name:combo[asgn[slot]].color_name,
+            hex:combo[asgn[slot]].hex,
+            brand:combo[asgn[slot]].brand||''
+          }));
+          const fm={};
+          for(const slot of [1,2,3,4]) {
+            const f=combo[asgn[slot]], k=f.hex+f.color_name;
+            if(!fm[k]) fm[k]={name:f.color_name,brand:f.brand||'',hex:f.hex,slots:[],tw:0};
+            fm[k].slots.push(slot); fm[k].tw+=SLOT_WEIGHT[slot];
+          }
+          const filSummary=Object.values(fm).map(v=>({
+            ...v, weightPct:Math.round(v.tw*1000)/10,
+            layerMm:Math.round(v.tw*TOTAL_HEIGHT*1000)/1000
+          })).sort((a,b)=>b.weightPct-a.weightPct);
+          best={slotInfo,filSummary,
+            mixedHex:rgbToHex(...mixed.map(Math.round)),
+            matchPct:matchPct(dist), distance:Math.round(dist*100)/100,
+            numFilaments:n};
+        }
+      }
+    }
+  }
+  return {best, targetHex};
+}
+
+// ── RENDER ────────────────────────────────────────────────────────
+function colFor(p){return p>=90?'#389e0d':p>=70?'#d48806':'#cf1322';}
+function setStatus(m,c=''){const el=document.getElementById('status');el.textContent=m;el.className=c;}
+
+function render(data, targetHex) {
+  const mix=data.best, pct=mix.matchPct, col=colFor(pct);
+  document.getElementById('cTarget').style.background=targetHex;
+  document.getElementById('cTargetHex').textContent=targetHex.toUpperCase();
+  document.getElementById('cMixed').style.background=mix.mixedHex;
+  document.getElementById('cMixedHex').textContent=mix.mixedHex;
+  const sn=document.getElementById('scoreNum');sn.textContent=pct+'%';sn.style.color=col;
+  setTimeout(()=>{const b=document.getElementById('scoreBar');b.style.width=pct+'%';b.style.background=col;},50);
+  document.getElementById('scoreMeta').textContent=t('dist_meta',mix.distance,mix.numFilaments,TOTAL_LAYERS,Math.round(TOTAL_HEIGHT/TOTAL_LAYERS*1000)/1000);
+  const scm={};mix.slotInfo.forEach(s=>scm[s.slot]=s.hex);
+  document.getElementById('layerTrack').innerHTML=LAYER_PATTERN.map((slot,i)=>
+    `<div class="layer-block" style="background:${scm[slot]||'#ccc'}" title="Layer ${i+1}"><span class="layer-n">${i+1}</span></div>`
+  ).join('');
+  document.getElementById('layerLegend').innerHTML=mix.slotInfo.map(s=>
+    `<div class="leg-item"><div class="leg-dot" style="background:${s.hex}"></div>${t('slot_legend',s.slot,s.name,s.weightPct)}</div>`
+  ).join('');
+  document.getElementById('slotsGrid').innerHTML=mix.slotInfo.map(s=>
+    `<div class="slot-card s${s.slot}">
+      <div class="slot-head"><span class="slot-num sc${s.slot}">${t('slot_label',s.slot)}</span><span class="slot-layers">${t('layer_label',s.layers)}</span></div>
+      <div class="slot-swatch" style="background:${s.hex}"></div>
+      <div class="slot-body">
+        <div class="slot-name">${s.name}</div>
+        <div class="slot-meta">${s.brand}</div>
+        <div class="slot-pct">${s.weightPct}%</div>
+        <div class="slot-hex">${s.hex}</div>
+      </div>
+    </div>`
+  ).join('');
+  document.getElementById('filRows').innerHTML=mix.filSummary.map(f=>
+    `<div class="fil-row2">
+      <div class="fil-sw" style="background:${f.hex}"></div>
+      <div class="fil-bd">
+        <div class="fil-nm">${f.name}</div>
+        <div class="fil-mt">${f.brand||f.hex}</div>
+        <div class="fil-sl">${f.slots.map(s=>`<span class="sbadge sb${s}">${t('slot_label',s)}</span>`).join('')}</div>
+      </div>
+      <div class="fil-rt">
+        <div class="fil-pc" style="color:${colFor(f.weightPct)}">${f.weightPct}%</div>
+        <div class="fil-mm">${t('layer_mm',f.layerMm)}</div>
+      </div>
+    </div>`
+  ).join('');
+  document.getElementById('result').style.display='block';
+}
+
+// ── INIT ──────────────────────────────────────────────────────────
+loadFilaments();
+setLang(currentLang);
+</script>
+</body>
+</html>
