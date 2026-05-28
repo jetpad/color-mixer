@@ -538,7 +538,7 @@ const T = {
     layer_label: n => `${n} Layer`,
     slot_legend: (s, name, pct) => `Slot ${s}: ${name} (${pct}%)`,
     layer_mm: mm => `${mm}mm`,
-    dist_meta: (d, n, tot, lh) => `RGB-Distanz: ${d} · ${n} Filament(e) · ${tot} Layer · ${lh}mm/Layer`,
+    dist_meta: (d, n, tot) => `RGB-Distanz: ${d} · ${n} Filament(e) · ${tot} Layer`,
     target_label: 'Zielfarbe',
     toast_exported: 'Filamente exportiert ✓',
     toast_imported: n => `${n} Filamente importiert ✓`,
@@ -579,7 +579,7 @@ const T = {
     filter_basic: 'Basic',
     filter_matte: 'Matte',
     filter_custom: 'Custom',
-    page_title: 'Find the Best <span>Color Mix</span>',
+    page_title: 'Find the Best<br><span>Color Mix</span>',
     page_desc: 'Choose a target color — the tool calculates the optimal slot assignment for your filaments.',
     btn_calc: '▶ Calculate',
     status_ready: 'Add filaments and choose a target color.',
@@ -599,7 +599,7 @@ const T = {
     layer_label: n => `${n} Layers`,
     slot_legend: (s, name, pct) => `Slot ${s}: ${name} (${pct}%)`,
     layer_mm: mm => `${mm}mm`,
-    dist_meta: (d, n, tot, lh) => `RGB distance: ${d} · ${n} filament(s) · ${tot} layers · ${lh}mm/layer`,
+    dist_meta: (d, n, tot) => `RGB distance: ${d} · ${n} filament(s) · ${tot} layers`,
     target_label: 'Target Color',
     toast_exported: 'Filaments exported ✓',
     toast_imported: n => `${n} filaments imported ✓`,
@@ -660,7 +660,7 @@ const T = {
     layer_label: n => `${n} Capas`,
     slot_legend: (s, name, pct) => `Ranura ${s}: ${name} (${pct}%)`,
     layer_mm: mm => `${mm}mm`,
-    dist_meta: (d, n, tot, lh) => `Distancia RGB: ${d} · ${n} filamento(s) · ${tot} capas · ${lh}mm/capa`,
+    dist_meta: (d, n, tot) => `Distancia RGB: ${d} · ${n} filamento(s) · ${tot} capas`,
     target_label: 'Color Objetivo',
     toast_exported: 'Filamentos exportados ✓',
     toast_imported: n => `${n} filamentos importados ✓`,
@@ -721,7 +721,7 @@ const T = {
     layer_label: n => `${n} couches`,
     slot_legend: (s, name, pct) => `Slot ${s} : ${name} (${pct}%)`,
     layer_mm: mm => `${mm}mm`,
-    dist_meta: (d, n, tot, lh) => `Distance RGB : ${d} · ${n} filament(s) · ${tot} couches · ${lh}mm/couche`,
+    dist_meta: (d, n, tot) => `Distance RGB : ${d} · ${n} filament(s) · ${tot} couches`,
     target_label: 'Couleur cible',
     toast_exported: 'Filaments exportés ✓',
     toast_imported: n => `${n} filaments importés ✓`,
@@ -782,7 +782,7 @@ const T = {
     layer_label: n => `${n} layer`,
     slot_legend: (s, name, pct) => `Slot ${s}: ${name} (${pct}%)`,
     layer_mm: mm => `${mm}mm`,
-    dist_meta: (d, n, tot, lh) => `Distanza RGB: ${d} · ${n} filamento/i · ${tot} layer · ${lh}mm/layer`,
+    dist_meta: (d, n, tot) => `Distanza RGB: ${d} · ${n} filamento/i · ${tot} layer`,
     target_label: 'Colore target',
     toast_exported: 'Filamenti esportati ✓',
     toast_imported: n => `${n} filamenti importati ✓`,
@@ -843,7 +843,7 @@ const T = {
     layer_label: n => `${n} camadas`,
     slot_legend: (s, name, pct) => `Slot ${s}: ${name} (${pct}%)`,
     layer_mm: mm => `${mm}mm`,
-    dist_meta: (d, n, tot, lh) => `Distância RGB: ${d} · ${n} filamento(s) · ${tot} camadas · ${lh}mm/camada`,
+    dist_meta: (d, n, tot) => `Distância RGB: ${d} · ${n} filamento(s) · ${tot} camadas`,
     target_label: 'Cor alvo',
     toast_exported: 'Filamentos exportados ✓',
     toast_imported: n => `${n} filamentos importados ✓`,
@@ -904,7 +904,7 @@ const T = {
     layer_label: n => `${n} warstw`,
     slot_legend: (s, name, pct) => `Slot ${s}: ${name} (${pct}%)`,
     layer_mm: mm => `${mm}mm`,
-    dist_meta: (d, n, tot, lh) => `Dystans RGB: ${d} · ${n} filament(ów) · ${tot} warstw · ${lh}mm/warstwę`,
+    dist_meta: (d, n, tot) => `Dystans RGB: ${d} · ${n} filament(ów) · ${tot} warstw`,
     target_label: 'Kolor docelowy',
     toast_exported: 'Filamenty wyeksportowane ✓',
     toast_imported: n => `Zaimportowano ${n} filamentów ✓`,
@@ -965,7 +965,7 @@ const T = {
     layer_label: n => `${n} 层`,
     slot_legend: (s, name, pct) => `槽位 ${s}: ${name} (${pct}%)`,
     layer_mm: mm => `${mm}mm`,
-    dist_meta: (d, n, tot, lh) => `RGB 距离: ${d} · ${n} 种耗材 · ${tot} 层 · ${lh}mm/层`,
+    dist_meta: (d, n, tot) => `RGB 距离: ${d} · ${n} 种耗材 · ${tot} 层`,
     target_label: '目标颜色',
     toast_exported: '耗材已导出 ✓',
     toast_imported: n => `已导入 ${n} 种耗材 ✓`,
@@ -1684,7 +1684,7 @@ function render(data, targetHex) {
   document.getElementById('cMixedHex').textContent=mix.mixedHex;
   const sn=document.getElementById('scoreNum');sn.textContent=pct+'%';sn.style.color=col;
   setTimeout(()=>{const b=document.getElementById('scoreBar');b.style.width=pct+'%';b.style.background=col;},50);
-  document.getElementById('scoreMeta').textContent=t('dist_meta',mix.distance,mix.numFilaments,TOTAL_LAYERS,Math.round(TOTAL_HEIGHT/TOTAL_LAYERS*1000)/1000);
+  document.getElementById('scoreMeta').textContent=t('dist_meta',mix.distance,mix.numFilaments,TOTAL_LAYERS);
   const scm={};mix.slotInfo.forEach(s=>scm[s.slot]=s.hex);
   document.getElementById('layerTrack').innerHTML=LAYER_PATTERN.map((slot,i)=>
     `<div class="layer-block" style="background:${scm[slot]||'#ccc'}" title="Layer ${i+1}"><span class="layer-n">${i+1}</span></div>`
