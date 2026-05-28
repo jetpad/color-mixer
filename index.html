@@ -351,9 +351,9 @@ input[type=color].tpick:hover { border-color: var(--accent); }
 
 @media (max-width: 700px) {
   .app { grid-template-columns: 1fr; }
-  .sidebar { position: static; height: auto; }
+  .sidebar { position: static; height: auto; order: 2; padding-top: 16px; }
+  .main { order: 1; padding: 24px 16px 16px; }
   .slots-grid { grid-template-columns: repeat(2,1fr); }
-  .main { padding: 24px 16px 60px; }
 }
 </style>
 </head>
