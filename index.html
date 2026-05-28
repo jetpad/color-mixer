@@ -47,13 +47,14 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); min-
   border-radius: 24px; box-shadow: 0 4px 24px rgba(0,0,0,0.5);
   border: 1px solid var(--border);
 }
-.lang-btn {
-  background: none; border: none; cursor: pointer; font-size: 1.4rem;
-  padding: 2px 5px; border-radius: 6px; opacity: 0.35;
-  transition: opacity 0.15s, transform 0.1s; line-height: 1;
+.lang-select {
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); font-size: 1.1rem;
+  padding: 0 2px; border-radius: 6px; cursor: pointer;
+  outline: none; height: 30px; margin-right: 2px;
+  transition: border-color 0.15s;
 }
-.lang-btn:hover { opacity: 0.75; transform: scale(1.1); }
-.lang-btn.active { opacity: 1; background: rgba(31,191,94,0.15); }
+.lang-select:hover { border-color: var(--accent); }
 
 /* ── Layout ── */
 .app { display: grid; grid-template-columns: 300px 1fr; min-height: 100vh; }
@@ -360,16 +361,9 @@ input[type=color].tpick:hover { border-color: var(--accent); }
 
 <!-- Language switcher -->
 <div class="lang-bar">
+  <select id="langSelect" class="lang-select" onchange="setLang(this.value)" title="Language"></select>
   <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle dark/light mode">☀</button>
   <button class="help-trigger" id="helpTrigger" onclick="openHelp()" title="Help">?</button>
-  <button class="lang-btn active" onclick="setLang('de')" title="Deutsch">🇩🇪</button>
-  <button class="lang-btn" onclick="setLang('en')" title="English">🇬🇧</button>
-  <button class="lang-btn" onclick="setLang('es')" title="Español">🇪🇸</button>
-  <button class="lang-btn" onclick="setLang('fr')" title="Français">🇫🇷</button>
-  <button class="lang-btn" onclick="setLang('it')" title="Italiano">🇮🇹</button>
-  <button class="lang-btn" onclick="setLang('pt')" title="Português">🇧🇷</button>
-  <button class="lang-btn" onclick="setLang('pl')" title="Polski">🇵🇱</button>
-  <button class="lang-btn" onclick="setLang('zh')" title="简体中文">🇨🇳</button>
 </div>
 
 <!-- Toast -->
@@ -553,6 +547,7 @@ const T = {
     toast_preset_none: 'Alle Filamente sind bereits geladen.',
     toast_cleared: 'Alle Filamente entfernt ✓',
     confirm_clear: 'Wirklich alle Filamente entfernen?',
+    lbl_language: 'Sprache',
     help_btn_title: 'Hilfe',
     help_title: 'So <span>funktioniert</span> es',
     help_dismiss: 'Verstanden',
@@ -613,6 +608,7 @@ const T = {
     toast_preset_none: 'All filaments already loaded.',
     toast_cleared: 'All filaments removed ✓',
     confirm_clear: 'Remove all filaments?',
+    lbl_language: 'Language',
     help_btn_title: 'Help',
     help_title: 'How it <span>works</span>',
     help_dismiss: 'Got it',
@@ -673,6 +669,7 @@ const T = {
     toast_preset_none: 'Todos los filamentos ya están cargados.',
     toast_cleared: 'Todos los filamentos eliminados ✓',
     confirm_clear: '¿Eliminar todos los filamentos?',
+    lbl_language: 'Idioma',
     help_btn_title: 'Ayuda',
     help_title: 'Cómo <span>funciona</span>',
     help_dismiss: 'Entendido',
@@ -733,6 +730,7 @@ const T = {
     toast_preset_none: 'Tous les filaments sont déjà chargés.',
     toast_cleared: 'Tous les filaments supprimés ✓',
     confirm_clear: 'Supprimer tous les filaments ?',
+    lbl_language: 'Langue',
     help_btn_title: 'Aide',
     help_title: 'Comment ça <span>marche</span>',
     help_dismiss: 'Compris',
@@ -793,6 +791,7 @@ const T = {
     toast_preset_none: 'Tutti i filamenti sono già caricati.',
     toast_cleared: 'Tutti i filamenti rimossi ✓',
     confirm_clear: 'Rimuovere davvero tutti i filamenti?',
+    lbl_language: 'Lingua',
     help_btn_title: 'Aiuto',
     help_title: 'Come <span>funziona</span>',
     help_dismiss: 'Capito',
@@ -853,6 +852,7 @@ const T = {
     toast_preset_none: 'Todos os filamentos já estão carregados.',
     toast_cleared: 'Todos os filamentos removidos ✓',
     confirm_clear: 'Remover todos os filamentos?',
+    lbl_language: 'Idioma',
     help_btn_title: 'Ajuda',
     help_title: 'Como <span>funciona</span>',
     help_dismiss: 'Entendi',
@@ -913,6 +913,7 @@ const T = {
     toast_preset_none: 'Wszystkie filamenty są już załadowane.',
     toast_cleared: 'Wszystkie filamenty usunięte ✓',
     confirm_clear: 'Na pewno usunąć wszystkie filamenty?',
+    lbl_language: 'Język',
     help_btn_title: 'Pomoc',
     help_title: 'Jak to <span>działa</span>',
     help_dismiss: 'Rozumiem',
@@ -973,6 +974,7 @@ const T = {
     toast_preset_none: '所有耗材已加载。',
     toast_cleared: '所有耗材已清除 ✓',
     confirm_clear: '确定要清除所有耗材吗？',
+    lbl_language: '语言',
     help_btn_title: '帮助',
     help_title: '<span>使用</span>说明',
     help_dismiss: '知道了',
@@ -1011,13 +1013,33 @@ function t(key, ...args) {
   return typeof val === 'function' ? val(...args) : (val || key);
 }
 
+const LANGS = [
+  {code:'de', flag:'🇩🇪', label:'Deutsch'},
+  {code:'en', flag:'🇬🇧', label:'English'},
+  {code:'es', flag:'🇪🇸', label:'Español'},
+  {code:'fr', flag:'🇫🇷', label:'Français'},
+  {code:'it', flag:'🇮🇹', label:'Italiano'},
+  {code:'pt', flag:'🇧🇷', label:'Português'},
+  {code:'pl', flag:'🇵🇱', label:'Polski'},
+  {code:'zh', flag:'🇨🇳', label:'中文'},
+];
+
+function initLangSelect() {
+  const sel = document.getElementById('langSelect');
+  LANGS.forEach(l => {
+    const opt = document.createElement('option');
+    opt.value = l.code; opt.textContent = l.flag + ' ' + l.label;
+    sel.appendChild(opt);
+  });
+  sel.value = currentLang;
+}
+
 function setLang(lang) {
   currentLang = lang;
   localStorage.setItem('fcm_lang', lang);
   document.documentElement.setAttribute('lang', lang);
-  document.querySelectorAll('.lang-btn').forEach(b =>
-    b.classList.toggle('active', b.getAttribute('onclick').includes(`'${lang}'`))
-  );
+  const sel = document.getElementById('langSelect');
+  if (sel) sel.value = lang;
   applyTranslations();
 }
 
@@ -1754,6 +1776,7 @@ function initTheme() {
 
 // ── INIT ──────────────────────────────────────────────────────────
 initTheme();
+initLangSelect();
 loadFilaments();
 setLang(currentLang);
 applyHelpTranslations();
