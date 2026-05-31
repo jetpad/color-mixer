@@ -174,15 +174,7 @@ input[type=color].tpick:hover { border-color: var(--accent); }
   border-radius: var(--radius);
 }
 .target-hex:focus { border-color: var(--accent); }
-.btn-calc {
-  background: var(--accent); color: #000; border: none;
-  font-weight: 700; font-size: 0.82rem;
-  letter-spacing: 0.06em; text-transform: uppercase;
-  padding: 13px 22px; cursor: pointer; transition: background 0.15s; white-space: nowrap;
-  border-radius: var(--radius);
-}
-.btn-calc:hover { background: var(--accent-dark); }
-.btn-calc:disabled { opacity: 0.4; cursor: not-allowed; }
+
 
 #status { font-size: 0.7rem; color: var(--muted); margin-top: 10px; min-height: 18px; }
 #status.err { color: var(--bad); }
@@ -201,17 +193,8 @@ input[type=color].tpick:hover { border-color: var(--accent); }
 .compare-lbl { font-size: 0.52rem; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(255,255,255,0.6); }
 .compare-hex { font-size: 0.72rem; color: rgba(255,255,255,0.8); font-weight: 500; letter-spacing: 0.05em; }
 .compare-name { font-size: 0.95rem; color: #fff; font-weight: 700; text-align: center; line-height: 1.2; text-shadow: 0 1px 4px rgba(0,0,0,0.4); }
+.compare-pct { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; margin-top: 2px; }
 
-.score-row {
-  display: flex; align-items: center; gap: 20px; margin-bottom: 20px;
-  background: var(--panel); border: 1px solid var(--border); padding: 18px 22px; border-radius: 12px;
-}
-.score-num { font-weight: 900; font-size: 2.8rem; line-height: 1; flex-shrink: 0; }
-.score-right { flex: 1; }
-.score-lbl { font-size: 0.58rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
-.bar-bg { background: var(--surface); height: 6px; width: 100%; border-radius: 3px; }
-.bar-fg { height: 100%; transition: width 0.7s cubic-bezier(.16,1,.3,1); border-radius: 3px; }
-.score-meta { font-size: 0.62rem; color: var(--muted); margin-top: 6px; }
 
 .layer-box { background: var(--panel); border: 1px solid var(--border); padding: 16px; margin-bottom: 20px; border-radius: 12px; }
 .layer-track { display: flex; height: 44px; gap: 2px; margin-bottom: 10px; border: 1px solid var(--border); overflow: hidden; border-radius: var(--radius); }
@@ -451,7 +434,6 @@ input[type=color].tpick:hover { border-color: var(--accent); }
       <div class="target-row">
         <input type="color" class="tpick" id="targetPick" value="#3a7bd5">
         <input type="text" class="target-hex" id="targetHex" value="#3A7BD5" maxlength="7" placeholder="#RRGGBB">
-        <button class="btn-calc" id="calcBtn" onclick="calculate()" data-t="btn_calc">▶ Berechnen</button>
       </div>
       <div id="status" data-t="status_ready">Filamente hinzufügen und Zielfarbe wählen.</div>
     </div>
@@ -460,7 +442,7 @@ input[type=color].tpick:hover { border-color: var(--accent); }
       <div class="res-label" data-t="lbl_compare">Farbvergleich</div>
       <div class="compare">
         <div class="compare-half" id="cTarget"><div class="compare-lbl" data-t="lbl_target">Zielfarbe</div><div class="compare-hex" id="cTargetHex"></div></div>
-        <div class="compare-half" id="cMixed"><div class="compare-lbl" data-t="lbl_result">Ergebnis</div><div class="compare-name" id="cColorName"></div><div class="compare-hex" id="cMixedHex"></div></div>
+        <div class="compare-half" id="cMixed"><div class="compare-lbl" data-t="lbl_result">Ergebnis</div><div class="compare-name" id="cColorName"></div><div class="compare-hex" id="cMixedHex"></div><div class="compare-pct" id="cScorePct"></div></div>
       </div>
 
       <div class="share-row">
@@ -470,24 +452,14 @@ input[type=color].tpick:hover { border-color: var(--accent); }
         </button>
       </div>
 
-      <div class="res-label" data-t="lbl_match">Übereinstimmung</div>
-      <div class="score-row ani">
-        <div class="score-num" id="scoreNum">—</div>
-        <div class="score-right">
-          <div class="score-lbl" data-t="lbl_accuracy">Match-Genauigkeit</div>
-          <div class="bar-bg"><div class="bar-fg" id="scoreBar" style="width:0"></div></div>
-          <div class="score-meta" id="scoreMeta"></div>
-        </div>
-      </div>
+      <div class="res-label" data-t="lbl_slots">AMS Slot-Belegung</div>
+      <div class="slots-grid ani" id="slotsGrid"></div>
 
       <div class="res-label" data-t="lbl_layers">Layer-Verteilung</div>
       <div class="layer-box ani">
         <div class="layer-track" id="layerTrack"></div>
         <div class="layer-legend" id="layerLegend"></div>
       </div>
-
-      <div class="res-label" data-t="lbl_slots">AMS Slot-Belegung</div>
-      <div class="slots-grid ani" id="slotsGrid"></div>
 
       <div class="res-label" data-t="lbl_filaments">Filamente & Anteile</div>
       <div class="fil-rows ani" id="filRows"></div>
@@ -538,7 +510,7 @@ const T = {
     layer_label: n => `${n} Layer`,
     slot_legend: (s, name, pct) => `Slot ${s}: ${name} (${pct}%)`,
     layer_mm: mm => `${mm}mm`,
-    dist_meta: (d, n, tot) => `RGB-Distanz: ${d} · ${n} Filament(e) · ${tot} Layer`,
+    dist_meta: (d, n) => `RGB-Distanz: ${d} · ${n} Filament(e)`,
     target_label: 'Zielfarbe',
     toast_exported: 'Filamente exportiert ✓',
     toast_imported: n => `${n} Filamente importiert ✓`,
@@ -555,7 +527,7 @@ const T = {
       <p>Dieses Tool plant eine Farbmischung für den <a href="https://makerworld.com/en/models/460079-multi-color-filament-mixer" target="_blank" rel="noopener">MakerWorld Multi-Color Filament Mixer</a>. Dein AMS druckt 19 Schichten mit bis zu 4 Filamenten — das Auge mischt sie zu einer scheinbaren Farbe. Wähle eine Zielfarbe und das Tool sagt dir, was du laden sollst.</p>
       <div class="help-step"><span class="help-num">1</span><div><b>Filamente wählen.</b> Alle 55 offiziellen Bambu Lab PLA Basic- und Matte-Farben sind vorinstalliert. Eigene Filamente fügst du über das Formular links hinzu — oder importierst eine JSON-Liste.</div></div>
       <div class="help-step"><span class="help-num">2</span><div><b>Zielfarbe festlegen.</b> Nutze den Farbwähler oder gib einen Hex-Code (#RRGGBB) in das Feld oben ein.</div></div>
-      <div class="help-step"><span class="help-num">3</span><div><b>Berechnen.</b> Das Tool prüft jede Kombination aus 1–4 Filamenten, gewichtet nach dem AMS-Schichtmuster (Slots 1–3 je 5 Schichten, Slot 4 mit 4 Schichten), und wählt die beste Übereinstimmung nach RGB-Abstand.</div></div>
+      <div class="help-step"><span class="help-num">3</span><div><b>Ergebnis ansehen.</b> Das Tool berechnet automatisch die beste Kombination aus 1–4 Filamenten, gewichtet nach dem AMS-Schichtmuster, sobald du die Zielfarbe oder Filamente änderst.</div></div>
       <p class="help-foot"><b>Ergebnis lesen:</b> 90 %+ ist exzellent · 70–89 % ist nah dran · unter 70 % bedeutet, dass deine Palette diese Farbe nicht ganz erreicht. Größere Palette = bessere Treffer.</p>
     `,
   },
@@ -599,7 +571,7 @@ const T = {
     layer_label: n => `${n} Layers`,
     slot_legend: (s, name, pct) => `Slot ${s}: ${name} (${pct}%)`,
     layer_mm: mm => `${mm}mm`,
-    dist_meta: (d, n, tot) => `RGB distance: ${d} · ${n} filament(s) · ${tot} layers`,
+    dist_meta: (d, n) => `RGB distance: ${d} · ${n} filament(s)`,
     target_label: 'Target Color',
     toast_exported: 'Filaments exported ✓',
     toast_imported: n => `${n} filaments imported ✓`,
@@ -616,7 +588,7 @@ const T = {
       <p>This tool plans a color mix for the <a href="https://makerworld.com/en/models/460079-multi-color-filament-mixer" target="_blank" rel="noopener">MakerWorld Multi-Color Filament Mixer</a>. Your AMS prints 19 layers using up to 4 filaments — the eye blends them into one apparent color. Pick a target and the tool tells you what to load.</p>
       <div class="help-step"><span class="help-num">1</span><div><b>Choose filaments.</b> All 55 official Bambu Lab PLA Basic and Matte colors are pre-loaded. Add your own with the form on the left, or import a JSON list.</div></div>
       <div class="help-step"><span class="help-num">2</span><div><b>Set the target color.</b> Use the color picker or paste a hex code (#RRGGBB) into the box at the top.</div></div>
-      <div class="help-step"><span class="help-num">3</span><div><b>Calculate.</b> The tool searches every combination of 1–4 filaments, weighted by the AMS layer pattern (slots 1–3 use 5 layers each, slot 4 uses 4 layers), and picks the closest match by RGB distance.</div></div>
+      <div class="help-step"><span class="help-num">3</span><div><b>See the result.</b> The tool automatically finds the best combination of 1–4 filaments, weighted by the AMS layer pattern, whenever you change the target color or your filament list.</div></div>
       <p class="help-foot"><b>Reading the result:</b> 90 %+ is excellent · 70–89 % is close · below 70 % means your palette can't quite reach that color. A bigger palette = better matches.</p>
     `,
   },
@@ -660,7 +632,7 @@ const T = {
     layer_label: n => `${n} Capas`,
     slot_legend: (s, name, pct) => `Ranura ${s}: ${name} (${pct}%)`,
     layer_mm: mm => `${mm}mm`,
-    dist_meta: (d, n, tot) => `Distancia RGB: ${d} · ${n} filamento(s) · ${tot} capas`,
+    dist_meta: (d, n) => `Distancia RGB: ${d} · ${n} filamento(s)`,
     target_label: 'Color Objetivo',
     toast_exported: 'Filamentos exportados ✓',
     toast_imported: n => `${n} filamentos importados ✓`,
@@ -677,7 +649,7 @@ const T = {
       <p>Esta herramienta planifica una mezcla de color para el <a href="https://makerworld.com/en/models/460079-multi-color-filament-mixer" target="_blank" rel="noopener">MakerWorld Multi-Color Filament Mixer</a>. Tu AMS imprime 19 capas usando hasta 4 filamentos — el ojo los mezcla en un color aparente. Elige un objetivo y la herramienta te dice qué cargar.</p>
       <div class="help-step"><span class="help-num">1</span><div><b>Elige los filamentos.</b> Los 55 colores oficiales de Bambu Lab PLA Basic y Matte vienen precargados. Añade los tuyos con el formulario de la izquierda, o importa una lista JSON.</div></div>
       <div class="help-step"><span class="help-num">2</span><div><b>Establece el color objetivo.</b> Usa el selector de color o pega un código hex (#RRGGBB) en el cuadro superior.</div></div>
-      <div class="help-step"><span class="help-num">3</span><div><b>Calcula.</b> La herramienta busca cada combinación de 1–4 filamentos, ponderada por el patrón de capas del AMS (ranuras 1–3 usan 5 capas cada una, ranura 4 usa 4 capas), y elige la mejor coincidencia por distancia RGB.</div></div>
+      <div class="help-step"><span class="help-num">3</span><div><b>Ver el resultado.</b> La herramienta calcula automáticamente la mejor combinación de 1–4 filamentos, ponderada por el patrón de capas del AMS, cada vez que cambias el color objetivo o la lista de filamentos.</div></div>
       <p class="help-foot"><b>Leer el resultado:</b> 90 %+ es excelente · 70–89 % es cercano · por debajo del 70 % significa que tu paleta no puede alcanzar ese color. Más paleta = mejores resultados.</p>
     `,
   },
@@ -721,7 +693,7 @@ const T = {
     layer_label: n => `${n} couches`,
     slot_legend: (s, name, pct) => `Slot ${s} : ${name} (${pct}%)`,
     layer_mm: mm => `${mm}mm`,
-    dist_meta: (d, n, tot) => `Distance RGB : ${d} · ${n} filament(s) · ${tot} couches`,
+    dist_meta: (d, n) => `Distance RGB : ${d} · ${n} filament(s)`,
     target_label: 'Couleur cible',
     toast_exported: 'Filaments exportés ✓',
     toast_imported: n => `${n} filaments importés ✓`,
@@ -738,7 +710,7 @@ const T = {
       <p>Cet outil planifie un mélange de couleur pour le <a href="https://makerworld.com/en/models/460079-multi-color-filament-mixer" target="_blank" rel="noopener">MakerWorld Multi-Color Filament Mixer</a>. Votre AMS imprime 19 couches avec jusqu'à 4 filaments — l'œil les mélange en une couleur apparente. Choisissez une cible et l'outil vous indique quoi charger.</p>
       <div class="help-step"><span class="help-num">1</span><div><b>Choisir les filaments.</b> Les 55 couleurs officielles Bambu Lab PLA Basic et Matte sont préchargées. Ajoutez les vôtres avec le formulaire à gauche, ou importez une liste JSON.</div></div>
       <div class="help-step"><span class="help-num">2</span><div><b>Définir la couleur cible.</b> Utilisez le sélecteur de couleur ou collez un code hex (#RRGGBB) dans la case en haut.</div></div>
-      <div class="help-step"><span class="help-num">3</span><div><b>Calculer.</b> L'outil teste chaque combinaison de 1 à 4 filaments, pondérée par le motif de couches de l'AMS (slots 1–3 utilisent 5 couches chacun, slot 4 utilise 4 couches), et choisit la meilleure correspondance par distance RGB.</div></div>
+      <div class="help-step"><span class="help-num">3</span><div><b>Voir le résultat.</b> L'outil calcule automatiquement la meilleure combinaison de 1 à 4 filaments, pondérée par le motif de couches de l'AMS, dès que vous modifiez la couleur cible ou la liste de filaments.</div></div>
       <p class="help-foot"><b>Lire le résultat :</b> 90 %+ est excellent · 70–89 % est proche · en dessous de 70 % signifie que votre palette ne peut pas atteindre cette couleur. Plus de couleurs = meilleurs résultats.</p>
     `,
   },
@@ -782,7 +754,7 @@ const T = {
     layer_label: n => `${n} layer`,
     slot_legend: (s, name, pct) => `Slot ${s}: ${name} (${pct}%)`,
     layer_mm: mm => `${mm}mm`,
-    dist_meta: (d, n, tot) => `Distanza RGB: ${d} · ${n} filamento/i · ${tot} layer`,
+    dist_meta: (d, n) => `Distanza RGB: ${d} · ${n} filamento/i`,
     target_label: 'Colore target',
     toast_exported: 'Filamenti esportati ✓',
     toast_imported: n => `${n} filamenti importati ✓`,
@@ -799,7 +771,7 @@ const T = {
       <p>Questo strumento pianifica una miscela di colori per il <a href="https://makerworld.com/en/models/460079-multi-color-filament-mixer" target="_blank" rel="noopener">MakerWorld Multi-Color Filament Mixer</a>. Il tuo AMS stampa 19 layer usando fino a 4 filamenti — l'occhio li mescola in un colore apparente. Scegli un target e lo strumento ti dice cosa caricare.</p>
       <div class="help-step"><span class="help-num">1</span><div><b>Scegli i filamenti.</b> I 55 colori ufficiali Bambu Lab PLA Basic e Matte sono precaricati. Aggiungi i tuoi con il modulo a sinistra o importa una lista JSON.</div></div>
       <div class="help-step"><span class="help-num">2</span><div><b>Imposta il colore target.</b> Usa il selettore di colore o incolla un codice hex (#RRGGBB) nella casella in alto.</div></div>
-      <div class="help-step"><span class="help-num">3</span><div><b>Calcola.</b> Lo strumento prova ogni combinazione di 1–4 filamenti, ponderata dal pattern di layer dell'AMS (slot 1–3 usano 5 layer ciascuno, slot 4 usa 4 layer), e sceglie la corrispondenza più vicina per distanza RGB.</div></div>
+      <div class="help-step"><span class="help-num">3</span><div><b>Vedi il risultato.</b> Lo strumento calcola automaticamente la migliore combinazione di 1–4 filamenti, ponderata dal pattern di layer dell'AMS, ogni volta che cambi il colore target o la lista di filamenti.</div></div>
       <p class="help-foot"><b>Leggere il risultato:</b> 90 %+ è eccellente · 70–89 % è vicino · sotto il 70 % significa che la tua palette non raggiunge quel colore. Più filamenti = match migliori.</p>
     `,
   },
@@ -843,7 +815,7 @@ const T = {
     layer_label: n => `${n} camadas`,
     slot_legend: (s, name, pct) => `Slot ${s}: ${name} (${pct}%)`,
     layer_mm: mm => `${mm}mm`,
-    dist_meta: (d, n, tot) => `Distância RGB: ${d} · ${n} filamento(s) · ${tot} camadas`,
+    dist_meta: (d, n) => `Distância RGB: ${d} · ${n} filamento(s)`,
     target_label: 'Cor alvo',
     toast_exported: 'Filamentos exportados ✓',
     toast_imported: n => `${n} filamentos importados ✓`,
@@ -860,7 +832,7 @@ const T = {
       <p>Esta ferramenta planeja uma mistura de cor para o <a href="https://makerworld.com/en/models/460079-multi-color-filament-mixer" target="_blank" rel="noopener">MakerWorld Multi-Color Filament Mixer</a>. Sua AMS imprime 19 camadas usando até 4 filamentos — o olho os mistura em uma cor aparente. Escolha um alvo e a ferramenta diz o que carregar.</p>
       <div class="help-step"><span class="help-num">1</span><div><b>Escolha os filamentos.</b> As 55 cores oficiais Bambu Lab PLA Basic e Matte vêm pré-carregadas. Adicione os seus com o formulário à esquerda, ou importe uma lista JSON.</div></div>
       <div class="help-step"><span class="help-num">2</span><div><b>Defina a cor alvo.</b> Use o seletor de cor ou cole um código hex (#RRGGBB) na caixa no topo.</div></div>
-      <div class="help-step"><span class="help-num">3</span><div><b>Calcule.</b> A ferramenta testa cada combinação de 1–4 filamentos, ponderada pelo padrão de camadas da AMS (slots 1–3 usam 5 camadas cada, slot 4 usa 4 camadas), e escolhe a melhor correspondência pela distância RGB.</div></div>
+      <div class="help-step"><span class="help-num">3</span><div><b>Veja o resultado.</b> A ferramenta calcula automaticamente a melhor combinação de 1–4 filamentos, ponderada pelo padrão de camadas da AMS, sempre que você muda a cor alvo ou a lista de filamentos.</div></div>
       <p class="help-foot"><b>Lendo o resultado:</b> 90 %+ é excelente · 70–89 % é próximo · abaixo de 70 % significa que sua paleta não alcança essa cor. Mais filamentos = melhores resultados.</p>
     `,
   },
@@ -904,7 +876,7 @@ const T = {
     layer_label: n => `${n} warstw`,
     slot_legend: (s, name, pct) => `Slot ${s}: ${name} (${pct}%)`,
     layer_mm: mm => `${mm}mm`,
-    dist_meta: (d, n, tot) => `Dystans RGB: ${d} · ${n} filament(ów) · ${tot} warstw`,
+    dist_meta: (d, n) => `Dystans RGB: ${d} · ${n} filament(ów)`,
     target_label: 'Kolor docelowy',
     toast_exported: 'Filamenty wyeksportowane ✓',
     toast_imported: n => `Zaimportowano ${n} filamentów ✓`,
@@ -921,7 +893,7 @@ const T = {
       <p>To narzędzie planuje mieszankę kolorów dla <a href="https://makerworld.com/en/models/460079-multi-color-filament-mixer" target="_blank" rel="noopener">MakerWorld Multi-Color Filament Mixer</a>. Twój AMS drukuje 19 warstw używając do 4 filamentów — oko miesza je w jeden pozorny kolor. Wybierz kolor docelowy, a narzędzie powie ci, co załadować.</p>
       <div class="help-step"><span class="help-num">1</span><div><b>Wybierz filamenty.</b> Wszystkie 55 oficjalnych kolorów Bambu Lab PLA Basic i Matte jest wstępnie załadowanych. Dodaj własne za pomocą formularza po lewej lub zaimportuj listę JSON.</div></div>
       <div class="help-step"><span class="help-num">2</span><div><b>Ustaw kolor docelowy.</b> Użyj próbnika kolorów lub wklej kod hex (#RRGGBB) w polu u góry.</div></div>
-      <div class="help-step"><span class="help-num">3</span><div><b>Oblicz.</b> Narzędzie sprawdza każdą kombinację 1–4 filamentów, ważoną wzorcem warstw AMS (sloty 1–3 używają po 5 warstw, slot 4 używa 4 warstw), i wybiera najlepsze dopasowanie po odległości RGB.</div></div>
+      <div class="help-step"><span class="help-num">3</span><div><b>Zobacz wynik.</b> Narzędzie automatycznie znajduje najlepszą kombinację 1–4 filamentów, ważoną wzorcem warstw AMS, gdy tylko zmienisz kolor docelowy lub listę filamentów.</div></div>
       <p class="help-foot"><b>Odczyt wyniku:</b> 90 %+ to doskonałe · 70–89 % to bliskie · poniżej 70 % oznacza, że twoja paleta nie sięga tego koloru. Większa paleta = lepsze dopasowanie.</p>
     `,
   },
@@ -965,7 +937,7 @@ const T = {
     layer_label: n => `${n} 层`,
     slot_legend: (s, name, pct) => `槽位 ${s}: ${name} (${pct}%)`,
     layer_mm: mm => `${mm}mm`,
-    dist_meta: (d, n, tot) => `RGB 距离: ${d} · ${n} 种耗材 · ${tot} 层`,
+    dist_meta: (d, n) => `RGB 距离: ${d} · ${n} 种耗材`,
     target_label: '目标颜色',
     toast_exported: '耗材已导出 ✓',
     toast_imported: n => `已导入 ${n} 种耗材 ✓`,
@@ -982,7 +954,7 @@ const T = {
       <p>此工具为 <a href="https://makerworld.com/en/models/460079-multi-color-filament-mixer" target="_blank" rel="noopener">MakerWorld 多色耗材混合器</a> 规划配色方案。AMS 使用最多 4 种耗材打印 19 层 — 肉眼会将它们混合成一种表观颜色。选择目标颜色，工具将告诉你应装载哪些耗材。</p>
       <div class="help-step"><span class="help-num">1</span><div><b>选择耗材。</b>已预加载 Bambu Lab PLA Basic 和 Matte 全部 55 种官方颜色。可通过左侧表单添加自定义耗材，或导入 JSON 列表。</div></div>
       <div class="help-step"><span class="help-num">2</span><div><b>设置目标颜色。</b>使用取色器，或在顶部输入框中粘贴十六进制颜色代码 (#RRGGBB)。</div></div>
-      <div class="help-step"><span class="help-num">3</span><div><b>计算。</b>工具按 AMS 层模式（槽位 1–3 各用 5 层，槽位 4 用 4 层）加权搜索 1–4 种耗材的所有组合，并按 RGB 距离选出最接近的匹配。</div></div>
+      <div class="help-step"><span class="help-num">3</span><div><b>查看结果。</b>每当你更改目标颜色或耗材列表时，工具会自动按 AMS 层模式加权，搜索 1–4 种耗材的最佳组合。</div></div>
       <p class="help-foot"><b>结果解读：</b>90 %+ 优秀 · 70–89 % 接近 · 低于 70 % 表示你的调色板无法精确匹配此颜色。耗材越多 = 匹配越好。</p>
     `,
   }
@@ -1145,6 +1117,7 @@ function loadFilaments() {
     saveFilaments();
   }
   renderFilamentList();
+  scheduleCalc();
 }
 
 function saveFilaments() {
@@ -1256,11 +1229,17 @@ fHexEl.addEventListener('input', () => {
 
 const tPickEl = document.getElementById('targetPick');
 const tHexEl  = document.getElementById('targetHex');
-tPickEl.addEventListener('input', () => tHexEl.value = tPickEl.value.toUpperCase());
+tPickEl.addEventListener('input', () => { tHexEl.value = tPickEl.value.toUpperCase(); scheduleCalc(); });
 tHexEl.addEventListener('input', () => {
-  if (/^#[0-9a-fA-F]{6}$/.test(tHexEl.value.trim())) tPickEl.value = tHexEl.value.trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(tHexEl.value.trim())) { tPickEl.value = tHexEl.value.trim(); scheduleCalc(); }
 });
 tHexEl.addEventListener('keydown', e => e.key === 'Enter' && calculate());
+
+let _calcTimer = null;
+function scheduleCalc() {
+  clearTimeout(_calcTimer);
+  _calcTimer = setTimeout(() => { if (filaments.length) calculate(); }, 300);
+}
 
 // ── ADD FILAMENT ──────────────────────────────────────────────────
 function addFilament() {
@@ -1272,6 +1251,7 @@ function addFilament() {
   filaments.push({id: Date.now(), color_name, brand, hex});
   saveFilaments();
   renderFilamentList();
+  scheduleCalc();
   document.getElementById('fColor_name').value = '';
   document.getElementById('fBrand').value = '';
   fHexEl.value = '#FFFFFF';
@@ -1282,6 +1262,7 @@ function deleteFilament(id) {
   filaments = filaments.filter(f => f.id !== id);
   saveFilaments();
   renderFilamentList();
+  scheduleCalc();
 }
 
 function setFilter(f) {
@@ -1471,7 +1452,6 @@ function calculate() {
   let hex = tHexEl.value.trim();
   if (!hex.startsWith('#')) hex='#'+hex;
   if (!/^#[0-9a-fA-F]{6}$/.test(hex)) { setStatus(t('status_err_hex'),'err'); return; }
-  document.getElementById('calcBtn').disabled=true;
   setStatus(t('status_loading'),'loading');
   setTimeout(()=>{
     try {
@@ -1479,7 +1459,6 @@ function calculate() {
       render(res, hex);
       setStatus(t('status_done', res.best.numFilaments, filaments.length));
     } catch(e) { setStatus('Error: '+e.message,'err'); }
-    finally { document.getElementById('calcBtn').disabled=false; }
   },10);
 }
 
@@ -1682,9 +1661,7 @@ function render(data, targetHex) {
   document.getElementById('cMixed').style.background=mix.mixedHex;
   document.getElementById('cColorName').textContent=getColorName(mix.mixedHex);
   document.getElementById('cMixedHex').textContent=mix.mixedHex;
-  const sn=document.getElementById('scoreNum');sn.textContent=pct+'%';sn.style.color=col;
-  setTimeout(()=>{const b=document.getElementById('scoreBar');b.style.width=pct+'%';b.style.background=col;},50);
-  document.getElementById('scoreMeta').textContent=t('dist_meta',mix.distance,mix.numFilaments,TOTAL_LAYERS);
+  const sp=document.getElementById('cScorePct');sp.textContent=pct+'% match';sp.style.color=col;
   const scm={};mix.slotInfo.forEach(s=>scm[s.slot]=s.hex);
   document.getElementById('layerTrack').innerHTML=LAYER_PATTERN.map((slot,i)=>
     `<div class="layer-block" style="background:${scm[slot]||'#ccc'}" title="Layer ${i+1}"><span class="layer-n">${i+1}</span></div>`
