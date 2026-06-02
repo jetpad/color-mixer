@@ -42,16 +42,20 @@ body { background: var(--bg); color: var(--text); font-family: var(--sans); min-
 
 /* ── Lang bar ── */
 .lang-bar {
-  position: fixed; top: 28px; right: 16px; z-index: 1000;
-  display: flex; gap: 4px; background: var(--panel); padding: 6px 8px;
-  border-radius: 24px; box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+  position: fixed; top: 8px; right: 16px; z-index: 1000;
+  display: flex; flex-direction: column; gap: 4px;
+  background: var(--panel); padding: 6px 8px;
+  border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.5);
   border: 1px solid var(--border);
+}
+.lang-bar-row {
+  display: flex; gap: 4px; align-items: center;
 }
 .lang-select {
   background: var(--surface); border: 1px solid var(--border);
   color: var(--text); font-size: 1.1rem;
   padding: 0 2px; border-radius: 6px; cursor: pointer;
-  outline: none; height: 30px; margin-right: 2px;
+  outline: none; height: 30px; width: 100%;
   transition: border-color 0.15s;
 }
 .lang-select:hover { border-color: var(--accent); }
@@ -344,9 +348,13 @@ input[type=color].tpick:hover { border-color: var(--accent); }
 
 <!-- Language switcher -->
 <div class="lang-bar">
-  <select id="langSelect" class="lang-select" onchange="setLang(this.value)" title="Language"></select>
-  <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle dark/light mode">☀</button>
-  <button class="help-trigger" id="helpTrigger" onclick="openHelp()" title="Help">?</button>
+  <div class="lang-bar-row">
+    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle dark/light mode">☀</button>
+    <button class="help-trigger" id="helpTrigger" onclick="openHelp()" title="Help">?</button>
+  </div>
+  <div class="lang-bar-row">
+    <select id="langSelect" class="lang-select" onchange="setLang(this.value)" title="Language"></select>
+  </div>
 </div>
 
 <!-- Toast -->
@@ -435,7 +443,6 @@ input[type=color].tpick:hover { border-color: var(--accent); }
         <input type="color" class="tpick" id="targetPick" value="#3a7bd5">
         <input type="text" class="target-hex" id="targetHex" value="#3A7BD5" maxlength="7" placeholder="#RRGGBB">
       </div>
-      <div id="status" data-t="status_ready">Filamente hinzufügen und Zielfarbe wählen.</div>
     </div>
 
     <div id="result">
@@ -490,7 +497,7 @@ const T = {
     filter_matte: 'Matte',
     filter_custom: 'Eigene',
     page_title: 'Optimale <span>Mischung</span> finden',
-    page_desc: 'Wähle eine Zielfarbe — das Tool berechnet die beste Slot-Belegung deiner Filamente.',
+    page_desc: 'Filamente hinzufügen und Zielfarbe wählen.',
     btn_calc: '▶ Berechnen',
     status_ready: 'Filamente hinzufügen und Zielfarbe wählen.',
     status_loading: 'Berechne optimale Slot-Belegung…',
@@ -551,7 +558,7 @@ const T = {
     filter_matte: 'Matte',
     filter_custom: 'Custom',
     page_title: 'Find the Best<br><span>Color Mix</span>',
-    page_desc: 'Choose a target color — the tool calculates the optimal slot assignment for your filaments.',
+    page_desc: 'Add filaments and choose a target color.',
     btn_calc: '▶ Calculate',
     status_ready: 'Add filaments and choose a target color.',
     status_loading: 'Calculating optimal slot assignment…',
@@ -612,7 +619,7 @@ const T = {
     filter_matte: 'Matte',
     filter_custom: 'Propios',
     page_title: 'Encontrar la <span>Mezcla</span> Óptima',
-    page_desc: 'Elige un color objetivo — la herramienta calcula la mejor asignación de ranuras.',
+    page_desc: 'Añade filamentos y elige un color objetivo.',
     btn_calc: '▶ Calcular',
     status_ready: 'Añade filamentos y elige un color objetivo.',
     status_loading: 'Calculando asignación óptima…',
@@ -673,7 +680,7 @@ const T = {
     filter_matte: 'Matte',
     filter_custom: 'Personnels',
     page_title: 'Trouver le meilleur <span>mélange</span>',
-    page_desc: 'Choisissez une couleur cible — l\'outil calcule l\'assignation optimale des slots.',
+    page_desc: 'Ajoutez des filaments et choisissez une couleur cible.',
     btn_calc: '▶ Calculer',
     status_ready: 'Ajoutez des filaments et choisissez une couleur cible.',
     status_loading: 'Calcul de l\'assignation optimale…',
@@ -734,7 +741,7 @@ const T = {
     filter_matte: 'Matte',
     filter_custom: 'Propri',
     page_title: 'Trova la migliore <span>miscela</span>',
-    page_desc: 'Scegli un colore target — lo strumento calcola l\'assegnazione ottimale degli slot.',
+    page_desc: 'Aggiungi filamenti e scegli un colore target.',
     btn_calc: '▶ Calcola',
     status_ready: 'Aggiungi filamenti e scegli un colore target.',
     status_loading: 'Calcolo dell\'assegnazione ottimale…',
@@ -795,7 +802,7 @@ const T = {
     filter_matte: 'Matte',
     filter_custom: 'Próprios',
     page_title: 'Encontrar a melhor <span>mistura</span>',
-    page_desc: 'Escolha uma cor alvo — a ferramenta calcula a melhor atribuição de slots.',
+    page_desc: 'Adicione filamentos e escolha uma cor alvo.',
     btn_calc: '▶ Calcular',
     status_ready: 'Adicione filamentos e escolha uma cor alvo.',
     status_loading: 'Calculando atribuição ótima…',
@@ -856,7 +863,7 @@ const T = {
     filter_matte: 'Matte',
     filter_custom: 'Własne',
     page_title: 'Znajdź najlepszą <span>mieszankę</span>',
-    page_desc: 'Wybierz kolor docelowy — narzędzie obliczy optymalne przypisanie slotów.',
+    page_desc: 'Dodaj filamenty i wybierz kolor docelowy.',
     btn_calc: '▶ Oblicz',
     status_ready: 'Dodaj filamenty i wybierz kolor docelowy.',
     status_loading: 'Obliczanie optymalnego przypisania…',
@@ -917,7 +924,7 @@ const T = {
     filter_matte: 'Matte',
     filter_custom: '自定义',
     page_title: '找到最佳<span>配色</span>',
-    page_desc: '选择目标颜色 — 工具将计算最佳的槽位分配。',
+    page_desc: '添加耗材并选择目标颜色。',
     btn_calc: '▶ 计算',
     status_ready: '添加耗材并选择目标颜色。',
     status_loading: '正在计算最佳分配…',
@@ -1650,7 +1657,7 @@ function _drawShareImage() {
 
 // ── RENDER ────────────────────────────────────────────────────────
 function colFor(p){return p>=90?'#389e0d':p>=70?'#d48806':'#cf1322';}
-function setStatus(m,c=''){const el=document.getElementById('status');el.textContent=m;el.className=c;}
+function setStatus(m,c=''){const el=document.getElementById('status');if(el){el.textContent=m;el.className=c;}}
 
 function render(data, targetHex) {
   const mix=data.best, pct=mix.matchPct, col=colFor(pct);
