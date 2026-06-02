@@ -187,6 +187,7 @@ input[type=color].tpick:hover { border-color: var(--accent); }
   color: var(--muted); margin-bottom: 12px; display: flex; align-items: center; gap: 10px;
 }
 .res-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.res-label .btn-share { margin-left: auto; flex-shrink: 0; }
 
 .compare { display: flex; height: 110px; border: 1px solid var(--border); margin-bottom: 20px; overflow: hidden; border-radius: 12px; }
 .compare-half { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 6px; }
@@ -316,7 +317,6 @@ input[type=color].tpick:hover { border-color: var(--accent); }
 @keyframes helpIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
 
 /* Share button */
-.share-row { display: flex; justify-content: flex-end; margin: -10px 0 20px; }
 .btn-share {
   background: var(--panel); border: 1px solid var(--border);
   color: var(--muted); font-family: var(--sans); font-size: 0.72rem; font-weight: 600;
@@ -439,17 +439,16 @@ input[type=color].tpick:hover { border-color: var(--accent); }
     </div>
 
     <div id="result">
-      <div class="res-label" data-t="lbl_compare">Farbvergleich</div>
-      <div class="compare">
-        <div class="compare-half" id="cTarget"><div class="compare-lbl" data-t="lbl_target">Zielfarbe</div><div class="compare-hex" id="cTargetHex"></div></div>
-        <div class="compare-half" id="cMixed"><div class="compare-lbl" data-t="lbl_result">Ergebnis</div><div class="compare-name" id="cColorName"></div><div class="compare-hex" id="cMixedHex"></div><div class="compare-pct" id="cScorePct"></div></div>
-      </div>
-
-      <div class="share-row">
+      <div class="res-label">
+        <span data-t="lbl_compare">Farbvergleich</span>
         <button class="btn-share" onclick="generateShareImage()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
           Share Recipe
         </button>
+      </div>
+      <div class="compare">
+        <div class="compare-half" id="cTarget"><div class="compare-lbl" data-t="lbl_target">Zielfarbe</div><div class="compare-hex" id="cTargetHex"></div></div>
+        <div class="compare-half" id="cMixed"><div class="compare-lbl" data-t="lbl_result">Ergebnis</div><div class="compare-name" id="cColorName"></div><div class="compare-hex" id="cMixedHex"></div><div class="compare-pct" id="cScorePct"></div></div>
       </div>
 
       <div class="res-label" data-t="lbl_slots">AMS Slot-Belegung</div>
